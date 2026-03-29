@@ -39,6 +39,10 @@ export const initTokenClient = (onLoginSuccess) => {
                 console.error("GSI Error:", resp.error);
                 return;
             }
+            // CRÈS IMPORTANT : Passer le jeton à GAPI pour autoriser les requêtes !
+            if (window.gapi && window.gapi.client) {
+                window.gapi.client.setToken({ access_token: resp.access_token });
+            }
             onLoginSuccess(resp.access_token);
         },
     });

@@ -95,7 +95,8 @@ export const useMusicScanner = (accessToken) => {
             localStorage.setItem(CACHE_KEY, JSON.stringify({ songs: newSongs, albums: newAlbums }));
         } catch (err) {
             console.error("Scan error:", err);
-            setError("Erreur : Vérifiez que l'application a bien l'accès au Drive (" + err.message + ")");
+            const errMsg = err.result?.error?.message || err.message || JSON.stringify(err);
+            setError("Erreur (" + errMsg + ") - Relancez la page et vérifiez l'accès Drive.");
             setIsScanning(false);
         }
     }, [accessToken]);
