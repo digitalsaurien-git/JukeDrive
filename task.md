@@ -1,11 +1,8 @@
-# Tâches JukeDrive v1.1 - Refonte UI et Recherche de Fichiers
+# Tâches JukeDrive v1.2 - Ciblage ID & Correctif UI
 
-- [x] **Interface & Design Premium**
-    - [x] Corriger le bug CSS (`flex_direction`) dans `Sidebar.jsx`.
-    - [x] Améliorer l'espacement, les couleurs et le style de `Sidebar.jsx`.
-    - [x] Refondre `MainView.jsx` pour un design chaleureux et aéré (cartes albums mieux dimensionnées, page d'accueil enrichie).
-    - [x] Ajuster le fichier global `index.css`.
-- [x] **Moteur de Recherche Google Drive (Dossier MUSIC)**
-    - [x] Modifier `googleDrive.js` pour rechercher le dossier principal (ex: `name = 'MUSIC' or name = 'musique'`).
-    - [x] Implémenter une logique de récupération des fichiers audio robustes (changement du mimeType à `mimeType contains 'audio/'` ou ciblage d'extensions).
-    - [x] Mettre à jour `useMusicScanner.js` pour tolérer les sous-dossiers et afficher d'éventuels messages d'état de scan.
+- [x] **Interface & Design**
+    - [x] Ajouter un renfort `paddingBottom` de 120px à la `sidebar` pour éviter le chevauchement avec la `player-bar`.
+    - [x] Afficher l'erreur du scanner dans `Sidebar.jsx` pour comprendre les éventuels échecs.
+- [x] **Moteur de Recherche Google Drive (Scan par ID)**
+    - [x] Créer `scanMusicTree` dans `googleDrive.js` pour scanner l'arborescence (3 niveaux max) à partir de l'ID racine.
+    - [x] Mettre à jour `useMusicScanner.js` pour intégrer ce nouvel algorithme optimisé avec l'ID `1J-EAg_yyAVuwvbwDyJoLCD_lc7bLNJle`.

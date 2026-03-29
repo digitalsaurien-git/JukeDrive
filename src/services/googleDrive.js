@@ -117,3 +117,73 @@ export const getFileBlob = async (fileId, accessToken) => {
     if (!response.ok) throw new Error("Failed to fetch file content");
     return await response.blob();
 };
+
+// Recherche des enfants d'une liste de dossiers
+const fetchChildrenBatch = async (parentIds, mimeTypeFilter) => {
+    let allFiles = [];
+    if (parentIds.length === 0) return [];
+    
+    // Découpage en lots de 15 pour ne pas dépasser la limite de la requête 'q'
+    for (let i = 0; i < parentIds.length; i += 15) {
+        const chunk = parentIds.slice(i, i + 15);
+        const parentQuery = chunk.map(id => `'${id}' in parents`).join(' or ');
+        const q = `(${parentQuery}) and (${mimeTypeFilter}) and trashed = false`;
+        
+        let pageToken = null;
+        do {
+            const response = await window.gapi.client.drive.files.list({
+                pageSize: 1000,
+                fields: 'nextPageToken, files(id, name, mimeType, thumbnailLink, parents)',
+                q,
+                pageToken
+            });
+            allFiles = allFiles.concat(response.result.files || []);
+            pageToken = response.result.nextPageToken;
+        } while (pageToken);
+    }
+    return allFiles;
+};
+
+// Algorithme Infaillible : Scanne spécifiquement 3 niveaux depuis un ID racine
+export const scanMusicTree = async (rootId) => {
+    if (!gapiInited) throw new Error("Google API non initialisée.");
+
+    // LEVEL 1: Chercher tout ce qui est dans le dossier MUSIC
+    let pageToken = null;
+    let rootChildren = [];
+    do {
+        const res = await window.gapi.client.drive.files.list({
+            pageSize: 1000,
+            fields: 'nextPageToken, files(id, name, mimeType, parents, thumbnailLink)',
+            q: `'${rootId}' in parents and trashed = false`,
+            pageToken
+        });
+        rootChildren = rootChildren.concat(res.result.files || []);
+        pageToken = res.result.nextPageToken;
+    } while (pageToken);
+
+    // Séparer les dossiers d'auteurs et d'éventuels mp3 jetés en vrac
+    const authors = rootChildren.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+    const rootAudioFiles = rootChildren.filter(f => f.mimeType.includes('audio/'));
+
+    // LEVEL 2: Chercher dans chaque dossier d'auteur
+    const authorIds = authors.map(a => a.id);
+    const authorChildren = await fetchChildrenBatch(authorIds, "mimeType = 'application/vnd.google-apps.folder' or mimeType contains 'audio/'");
+    
+    const albums = authorChildren.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+    const authorAudioFiles = authorChildren.filter(f => f.mimeType.includes('audio/'));
+
+    // LEVEL 3: Chercher dans chaque dossier d'album
+    const albumIds = albums.map(a => a.id);
+    const albumAudioFiles = await fetchChildrenBatch(albumIds, "mimeType contains 'audio/'");
+
+    // Rassembler tous les fichiers audio
+    const allAudioFiles = [...rootAudioFiles, ...authorAudioFiles, ...albumAudioFiles];
+    
+    // Créer un dictionnaire lookup pour retrouver très vite les noms des albums/auteurs
+    const folderLookup = {};
+    authors.forEach(a => folderLookup[a.id] = a);
+    albums.forEach(a => folderLookup[a.id] = a);
+    
+    return { audioFiles: allAudioFiles, folderLookup };
+};

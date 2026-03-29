@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { listFiles, getFileBlob, getFoldersInfo } from '../services/googleDrive';
+import { scanMusicTree, getFileBlob } from '../services/googleDrive';
 import { parseMetadata } from '../utils/metadata';
 
 const CACHE_KEY = 'jukedrive_music_cache';
@@ -25,28 +25,43 @@ export const useMusicScanner = (accessToken) => {
         setIsScanning(true);
         setError(null);
         try {
-            // 1. Récupération de tous les fichiers audio
-            const files = await listFiles();
+            // ID du dossier Google Drive contenant la musique (Fixé pour cette instance Vercel)
+            const MUSIC_FOLDER_ID = '1J-EAg_yyAVuwvbwDyJoLCD_lc7bLNJle';
             
-            // 2. Isolation des IDs de dossiers parents (Albums)
-            const albumFolderIds = [...new Set(files.map(f => f.parents?.[0]).filter(Boolean))];
-            const albumFolders = await getFoldersInfo(albumFolderIds);
+            // Lancement de l'algorithme "Infaillible" (récupère 3 niveaux d'arborescence)
+            const { audioFiles, folderLookup } = await scanMusicTree(MUSIC_FOLDER_ID);
             
-            // 3. Isolation des IDs de dossiers grand-parents (Artistes)
-            const artistFolderIds = [...new Set(Object.values(albumFolders).map(a => a.parents?.[0]).filter(Boolean))];
-            const artistFolders = await getFoldersInfo(artistFolderIds);
-            
+            if (audioFiles.length === 0) {
+                setError("Aucun fichier audio trouvé dans le dossier fourni.");
+                setIsScanning(false);
+                return;
+            }
+
             const newSongs = [];
             const newAlbums = {};
 
-            for (const file of files) {
-                const parentId = file.parents?.[0];
-                const albumFolder = parentId ? albumFolders[parentId] : null;
-                const albumName = albumFolder ? albumFolder.name : 'Unknown Album';
+            for (const file of audioFiles) {
+                const parentId = file.parents?.[0]; // Cet ID correspond soit à l'Album soit à l'Auteur
+                const parentFolder = folderLookup[parentId];
                 
-                const grandParentId = albumFolder?.parents?.[0];
-                const artistFolder = grandParentId ? artistFolders[grandParentId] : null;
-                const artistName = artistFolder ? artistFolder.name : 'Unknown Artist';
+                let albumName = 'Single / Inconnu';
+                let artistName = 'Artiste Inconnu';
+
+                if (parentFolder) {
+                    // On vérifie le niveau de profondeur
+                    const grandParentId = parentFolder.parents?.[0];
+                    const grandParentFolder = folderLookup[grandParentId];
+                    
+                    if (grandParentFolder) {
+                        // Cas classique : MUSIC -> Auteur -> Album -> MP3
+                        albumName = parentFolder.name;
+                        artistName = grandParentFolder.name;
+                    } else {
+                        // Cas secondaire : MUSIC -> Auteur -> MP3
+                        artistName = parentFolder.name;
+                        albumName = artistName + " (Singles)"; 
+                    }
+                }
 
                 // Nettoyage esthétique du nom de la chanson
                 const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
@@ -80,7 +95,7 @@ export const useMusicScanner = (accessToken) => {
             localStorage.setItem(CACHE_KEY, JSON.stringify({ songs: newSongs, albums: newAlbums }));
         } catch (err) {
             console.error("Scan error:", err);
-            setError("Erreur d'analyse. " + err.message);
+            setError("Erreur : Vérifiez que l'application a bien l'accès au Drive (" + err.message + ")");
             setIsScanning(false);
         }
     }, [accessToken]);

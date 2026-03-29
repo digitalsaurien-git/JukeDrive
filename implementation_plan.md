@@ -1,39 +1,41 @@
-# Plan d'Amélioration : JukeDrive v1.1
+# Plan d'Amélioration : JukeDrive v1.2
 
-## Analyse des Retours Utilisateurs
-1. **Design Cassé (Menu Vertical)** : Le problème visuel décrit et visible sur la capture d'écran est dû à une faute de frappe CSS dans le code React (`flex_direction: 'column'` au lieu de `flexDirection: 'column'`). Les boutons de navigation se superposent et cassent toute l'interface.
-2. **Design Général "Très Moche"** : Le design actuel manque de marges respirantes, de contrastes réfléchis dans la sidebar et la page d'albums paraît vide.
-3. **Ciblage du Dossier "musique"** : Actuellement, l'application scanne l'intégralité de Google Drive à la recherche du type technique `audio/mpeg`. Si Google a classé vos MP3 légèrement différemment ou si vous avez beaucoup de fichiers, la limite est vite atteinte, donnant l'impression que rien ne remonte. 
+## 1. Analyse des problèmes actuels
+- **Chevauchement d'Interface** : La barre du lecteur (`player-bar`) chevauche le menu de gauche (`sidebar`) en bas de l'écran car elle est centrée de manière absolue. Cela cache le bouton de statut de connexion.
+- **Scan Silencieux ("Ne fait rien")** : Le scan de tous les fichiers audio du Drive retourne probablement 0 fichier ou échoue sans prévenir (les messages d'erreur ne sont pas affichés dans l'interface principale). De plus, si vos fichiers n'ont pas un MIME type standard `audio/`, la requête globale de Google Drive les ignorera.
 
-## Changements Proposés
+## 2. Changements Proposés
 
-### 1. Refonte UI/UX (Design & Composants)
-
+### A. Correction UI (Sidebar & Player)
 #### [MODIFY] [Sidebar.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/Sidebar.jsx)
-- Correction du bug `flexDirection`.
-- Restructuration des espacements et contrastes pour un design beaucoup plus premium (inspiré de Spotify/Apple Music sur desktop).
-- Ajout d'une gestion propre de l'état "Scrollable" pour les playlists afin d'éviter qu'elles n'écrasent le reste.
+- Ajout d'un `paddingBottom: '120px'` (ou ajustement de la structure) sur la section basse du menu pour que le bouton "Connecté" et le bouton de Scan restent accessibles au-dessus de la barre de lecture.
+- Affichage clair de l'erreur du scanner (s'il y en a une) juste en dessous du bouton "Scanner".
 
-#### [MODIFY] [MainView.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/MainView.jsx)
-- Amélioration de la présentation de l'écran d'accueil avec une grille plus "Biophilic" et des placeholders esthétiques si aucune pochette n'est trouvée.
+#### [MODIFY] [index.css](file:///c:/Data/Antigravity/projects/jukebox/src/index.css)
+- Ajustements sur la largeur du `player-bar` pour s'insérer parfaitement sans gêner la sidebar.
 
-### 2. Logique de Scan du Dossier "musique"
+### B. Moteur de Recherche Ciblé (Par ID de Dossier)
+Puisque vous avez sagement proposé d'utiliser l'ID du dossier "MUSIC", c'est la solution la plus robuste pour contourner les limitations de recherche de Google.
+
+#### [MODIFY] [App.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/App.jsx)
+- Ajout d'un deuxième champ dans la page de configuration initiale : "ID du dossier MUSIC (Optionnel)". Il sera sauvegardé dans le navigateur.
 
 #### [MODIFY] [googleDrive.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/googleDrive.js)
-- Ajout d'une fonction `findMusicFolder(folderName)` pour rechercher spécifiquement le dossier (ex: "musique").
-- Modification de la fonction `listFiles` pour qu'elle cible uniquement les fichiers audio contenus **dans** ce dossier spécifique (soit via le nom du dossier, soit par une recherche de tous les fichiers dont le nom contient `.mp3` ou `.flac`).
+- Création d'une fonction `scanFolderTree(rootFolderId)` qui fera exactement :
+  1. Trouver tous les dossiers "Auteurs" dans "MUSIC".
+  2. Trouver tous les dossiers "Albums" dans ces Auteurs.
+  3. Trouver toutes les chansons dans ces Albums.
+- Cette méthode est 100% infaillible car elle ne dépend pas de l'indexation de Google sur les types de fichiers (elle prendra tout ce qui est dedans, de manière structurée !).
 
 #### [MODIFY] [useMusicScanner.js](file:///c:/Data/Antigravity/projects/jukebox/src/hooks/useMusicScanner.js)
-- Intégration d'une variable de configuration pour le nom du dossier racine (par défaut "musique" avec un M majuscule ou minuscule).
+- Remplacement du scan global aveugle par ce scan ciblé sur votre ID de dossier s'il a été renseigné.
 
-## Questions Ouvertes
+## 3. Demande d'Action
 
 > [!IMPORTANT]
-> **Arborescence** : Dans votre dossier "musique", les fichiers `.mp3` sont-ils tous en vrac, ou sont-ils rangés dans des sous-dossiers (ex: `musique/Artiste/Album/chanson.mp3`) ? 
-> (*S'il y a des sous-dossiers, la recherche Drive est un peu plus complexe et je vérifierai via le nom au lieu de chercher les "enfants directs" du dossier*).
+> Pour vérifier que je peux utiliser cette méthode à 3 niveaux, confirmez-moi que l'ID que vous me fournirez est bien celui du dossier **"MUSIC"**, et que sa structure stricte est toujours :
+> **MUSIC** ➔ **Dossier d'Auteur** ➔ **Dossier d'Album** ➔ **Fichiers Audio**
+> 
+> *Si vous avez des chansons directement en vrac dans le dossier d'un auteur sans passer par un dossier d'album, dites-le moi pour que je prévoie ce cas de figure.*
 
-## Plan de Vérification
-### Vérification Visuelle
-- Vous verrez instantanément la correction de la barre latérale gauche (alignement vertical correct).
-### Vérification Fonctionnelle
-- Au clic sur "Scanner le Drive", un ciblage plus large et/ou localisé au dossier "musique" garantira que vos fichiers remontent.
+Je peux implémenter ces deux corrections (Visuel + Scan par ID) dès que vous me validez ce comportement !

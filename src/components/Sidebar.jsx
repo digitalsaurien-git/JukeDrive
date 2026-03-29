@@ -8,6 +8,7 @@ const Sidebar = ({
   onCreatePlaylist, 
   onScan, 
   isScanning,
+  error,
   user
 }) => {
   return (
@@ -68,12 +69,19 @@ const Sidebar = ({
         </button>
       </nav>
 
-      <div style={{ marginTop: 'auto', display: 'flex', flex_direction: 'column', gap: '1rem' }}>
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '120px' }}>
         {user && (
-          <button className="btn-scan" onClick={onScan} disabled={isScanning}>
-            <RefreshCw size={18} className={isScanning ? 'spin' : ''} />
-            <span>{isScanning ? 'Analyse...' : 'Scanner le Drive'}</span>
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <button className="btn-scan" onClick={onScan} disabled={isScanning}>
+              <RefreshCw size={18} className={isScanning ? 'spin' : ''} />
+              <span>{isScanning ? 'Analyse...' : 'Scanner le Drive'}</span>
+            </button>
+            {error && (
+              <div style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>
+                {error}
+              </div>
+            )}
+          </div>
         )}
         
         {user && (

@@ -136,6 +136,7 @@ function App() {
         onCreatePlaylist={createPlaylist}
         onScan={scan}
         isScanning={isScanning}
+        error={error}
         user={accessToken}
       />
       
