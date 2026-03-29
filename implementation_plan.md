@@ -1,72 +1,39 @@
-# Plan d'implémentation - JukeDrive
+# Plan d'Amélioration : JukeDrive v1.1
 
-**JukeDrive** est une application web Jukebox premium permettant de transformer un dossier Google Drive en une bibliothèque musicale interactive.
+## Analyse des Retours Utilisateurs
+1. **Design Cassé (Menu Vertical)** : Le problème visuel décrit et visible sur la capture d'écran est dû à une faute de frappe CSS dans le code React (`flex_direction: 'column'` au lieu de `flexDirection: 'column'`). Les boutons de navigation se superposent et cassent toute l'interface.
+2. **Design Général "Très Moche"** : Le design actuel manque de marges respirantes, de contrastes réfléchis dans la sidebar et la page d'albums paraît vide.
+3. **Ciblage du Dossier "musique"** : Actuellement, l'application scanne l'intégralité de Google Drive à la recherche du type technique `audio/mpeg`. Si Google a classé vos MP3 légèrement différemment ou si vous avez beaucoup de fichiers, la limite est vite atteinte, donnant l'impression que rien ne remonte. 
 
-## Points d'attention & Choix Techniques
+## Changements Proposés
 
-> [!IMPORTANT]
-> - **Authentification Google** : L'application nécessite un `CLIENT_ID` Google Cloud. Pour une expérience "Zéro Config", je vais implémenter une interface permettant à l'utilisateur de saisir son ID au premier lancement (sauvegardé en local).
-> - **Performances** : L'extraction des métadonnées ID3 (pochettes, artistes) nécessite le téléchargement partiel/total des fichiers. Je vais mettre en place un système de cache dans le `localStorage` pour éviter de re-scanner les fichiers à chaque visite.
-> - **Téléchargement** : Le téléchargement multiple sera géré via `jszip` pour générer une archive .zip à la volée côté client.
+### 1. Refonte UI/UX (Design & Composants)
 
-## Architecture Proposée
+#### [MODIFY] [Sidebar.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/Sidebar.jsx)
+- Correction du bug `flexDirection`.
+- Restructuration des espacements et contrastes pour un design beaucoup plus premium (inspiré de Spotify/Apple Music sur desktop).
+- Ajout d'une gestion propre de l'état "Scrollable" pour les playlists afin d'éviter qu'elles n'écrasent le reste.
 
-- **Frontend** : React 18 (Vite) + Lucide Icons.
-- **Styles** : CSS natif avec un thème "Dark Glassmorphism" adapté au bureau.
-- **APIs** : Google Drive API v3 + Google Identity Services (GIS).
-- **Bibliothèques Clés** :
-  - `music-metadata-browser` : Extraction des tags ID3 (Artiste, Album, Cover).
-  - `jszip` : Création des archives de téléchargement.
-  - `file-saver` : Déclenchement des téléchargements.
+#### [MODIFY] [MainView.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/MainView.jsx)
+- Amélioration de la présentation de l'écran d'accueil avec une grille plus "Biophilic" et des placeholders esthétiques si aucune pochette n'est trouvée.
 
----
+### 2. Logique de Scan du Dossier "musique"
 
-## Étapes de réalisation
+#### [MODIFY] [googleDrive.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/googleDrive.js)
+- Ajout d'une fonction `findMusicFolder(folderName)` pour rechercher spécifiquement le dossier (ex: "musique").
+- Modification de la fonction `listFiles` pour qu'elle cible uniquement les fichiers audio contenus **dans** ce dossier spécifique (soit via le nom du dossier, soit par une recherche de tous les fichiers dont le nom contient `.mp3` ou `.flac`).
 
-### 1. Initialisation du Projet
-- Structure de base dans le dossier `jukebox`.
-- Configuration de Vite et installation des dépendances.
-
-### 2. Module d'Authentification & Google Drive
-- `App.jsx` : Intégration de Google Identity Services.
-- `services/googleDrive.js` : Service pour lister les fichiers `.mp3` et récupérer les contenus.
-
-### 3. Moteur de Scan & Métadonnées
-- `hooks/useMusicScanner.js` : Hook pour parcourir le Drive, extraire les métadonnées via `music-metadata-browser` et gérer le cache local.
-- `utils/metadata.js` : Helper pour l'extraction propre des tags.
-
-### 4. Interface Jukebox (Layout)
-- `components/Sidebar.jsx` : Navigation Artistes / Albums / Playlists.
-- `components/MainView.jsx` : Grille d'albums et liste de chansons.
-- `components/Player.jsx` : Lecteur central avec contrôles évolués.
-
-### 5. Gestion des Playlists
-- `store/usePlaylistStore.js` : Gestion de l'état des playlists (création, ajout, suppression).
-- Persistance des playlists sur Google Drive (fichier `jukedrive_playlists.json`) ou LocalStorage selon la préférence de stabilité.
-
-### 6. Module de Téléchargement
-- `services/downloader.js` : Logique de zipping via `jszip` pour les albums complets ou sélections.
-
-### 7. Polissage UI/UX
-- Animations de transition fluides.
-- Mode "Squelette" pendant le chargement des métadonnées.
-- Gestion des erreurs (Drive non connecté, dossier vide).
-
----
+#### [MODIFY] [useMusicScanner.js](file:///c:/Data/Antigravity/projects/jukebox/src/hooks/useMusicScanner.js)
+- Intégration d'une variable de configuration pour le nom du dossier racine (par défaut "musique" avec un M majuscule ou minuscule).
 
 ## Questions Ouvertes
 
-> [!CAUTION]
-> **Client ID Google** : Possédez-vous déjà un `CLIENT_ID` Google Cloud Console ? Si non, je peux vous guider pour en créer un ou mettre en place un mode "Demo" avec des données simulées pour que vous puissiez tester l'interface immédiatement.
+> [!IMPORTANT]
+> **Arborescence** : Dans votre dossier "musique", les fichiers `.mp3` sont-ils tous en vrac, ou sont-ils rangés dans des sous-dossiers (ex: `musique/Artiste/Album/chanson.mp3`) ? 
+> (*S'il y a des sous-dossiers, la recherche Drive est un peu plus complexe et je vérifierai via le nom au lieu de chercher les "enfants directs" du dossier*).
 
 ## Plan de Vérification
-
-### Tests Automatisés / Web
-- Utilisation de l'outil `browser` pour vérifier le rendu visuel.
-- Simulation de la connexion (si Client ID fourni).
-
-### Vérification Manuelle
-- Lancer le lecteur -> Vérifier le chargement du bouton.
-- Rechercher un artiste -> Vérifier le filtrage.
-- Cliquer sur un album -> Vérifier que la lecture démarre.
-- Télécharger -> Vérifier la réception du fichier.
+### Vérification Visuelle
+- Vous verrez instantanément la correction de la barre latérale gauche (alignement vertical correct).
+### Vérification Fonctionnelle
+- Au clic sur "Scanner le Drive", un ciblage plus large et/ou localisé au dossier "musique" garantira que vos fichiers remontent.

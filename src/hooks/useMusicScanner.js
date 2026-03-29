@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { listFiles, getFileBlob } from '../services/googleDrive';
+import { listFiles, getFileBlob, getFoldersInfo } from '../services/googleDrive';
 import { parseMetadata } from '../utils/metadata';
 
 const CACHE_KEY = 'jukedrive_music_cache';
@@ -25,37 +25,62 @@ export const useMusicScanner = (accessToken) => {
         setIsScanning(true);
         setError(null);
         try {
+            // 1. Récupération de tous les fichiers audio
             const files = await listFiles();
+            
+            // 2. Isolation des IDs de dossiers parents (Albums)
+            const albumFolderIds = [...new Set(files.map(f => f.parents?.[0]).filter(Boolean))];
+            const albumFolders = await getFoldersInfo(albumFolderIds);
+            
+            // 3. Isolation des IDs de dossiers grand-parents (Artistes)
+            const artistFolderIds = [...new Set(Object.values(albumFolders).map(a => a.parents?.[0]).filter(Boolean))];
+            const artistFolders = await getFoldersInfo(artistFolderIds);
+            
             const newSongs = [];
             const newAlbums = {};
 
-            // Limiter à 10 fichiers pour le test initial / performance si trop de fichiers
-            // Mais pour une version réelle, on pourrait vouloir tout scanner par lots.
             for (const file of files) {
-                // Tentative de récupération des métadonnées (énergivore, idéalement on ferait ça en arrière-plan)
-                // Pour l'instant, on se base sur le nom du fichier si on veut aller vite,
-                // mais le PRD demande les pochettes/artistes.
+                const parentId = file.parents?.[0];
+                const albumFolder = parentId ? albumFolders[parentId] : null;
+                const albumName = albumFolder ? albumFolder.name : 'Unknown Album';
                 
-                // Note: Récupérer le blob pour CHAQUE fichier est très lent au début.
-                // On va d'abord lister, puis on extraira les métadonnées au fur et à mesure ou pour les fichiers manquants au cache.
-                
+                const grandParentId = albumFolder?.parents?.[0];
+                const artistFolder = grandParentId ? artistFolders[grandParentId] : null;
+                const artistName = artistFolder ? artistFolder.name : 'Unknown Artist';
+
+                // Nettoyage esthétique du nom de la chanson
+                const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
+
+                const meta = {
+                    title: cleanTitle,
+                    album: albumName,
+                    artist: artistName,
+                    cover: file.thumbnailLink || null // cover miniature via l'API Google
+                };
+
                 const song = {
                     id: file.id,
                     name: file.name,
                     thumbnail: file.thumbnailLink,
-                    metadata: null, // Sera rempli plus tard pour économiser la bande passante au scan initial
+                    metadata: meta, 
                 };
                 newSongs.push(song);
+
+                if (!newAlbums[albumName]) {
+                    newAlbums[albumName] = { songs: [], cover: file.thumbnailLink, artist: artistName };
+                }
+                newAlbums[albumName].songs.push(song);
             }
 
             setSongs(newSongs);
+            setAlbums(newAlbums);
             setIsScanning(false);
             
-            // Sauvegarder dans le cache (simplifié)
+            // Cache pour rechargement instantané
             localStorage.setItem(CACHE_KEY, JSON.stringify({ songs: newSongs, albums: newAlbums }));
         } catch (err) {
             console.error("Scan error:", err);
-            setError(err.message);
+            setError("Erreur d'analyse. " + err.message);
             setIsScanning(false);
         }
     }, [accessToken]);

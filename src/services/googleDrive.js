@@ -54,20 +54,56 @@ export const login = () => {
     }
 };
 
-// Lister les fichiers MP3
-export const listFiles = async (q = "mimeType = 'audio/mpeg'") => {
+// Lister les fichiers audio avec pagination automatique compléte
+export const listFiles = async (q = "mimeType contains 'audio/'") => {
     if (!gapiInited) return [];
+    let allFiles = [];
+    let pageToken = null;
+    
     try {
-        const response = await window.gapi.client.drive.files.list({
-            pageSize: 1000,
-            fields: 'nextPageToken, files(id, name, mimeType, webContentLink, thumbnailLink, parents)',
-            q,
-        });
-        return response.result.files || [];
+        do {
+            const response = await window.gapi.client.drive.files.list({
+                pageSize: 1000,
+                fields: 'nextPageToken, files(id, name, mimeType, webContentLink, thumbnailLink, parents)',
+                q,
+                pageToken: pageToken
+            });
+            
+            const currentFiles = response.result.files || [];
+            allFiles = [...allFiles, ...currentFiles];
+            pageToken = response.result.nextPageToken;
+        } while (pageToken);
+        
+        return allFiles;
     } catch (err) {
         console.error("Error listing files:", err);
         throw err;
     }
+};
+
+// Récupérer un lot de dossiers (pour traduire les IDs parents en Noms d'albums/artistes)
+export const getFoldersInfo = async (folderIds) => {
+    if (!gapiInited || folderIds.length === 0) return {};
+    
+    let result = {};
+    // Google Drive limite les requêtes complex. On découpe en paquets de 50 IDs.
+    for (let i = 0; i < folderIds.length; i += 50) {
+        const chunk = folderIds.slice(i, i + 50);
+        const query = chunk.map(id => `'${id}' = id`).join(' or ');
+        try {
+            const response = await window.gapi.client.drive.files.list({
+                pageSize: 1000,
+                fields: 'files(id, name, parents)',
+                q: `mimeType = 'application/vnd.google-apps.folder' and (${query})`
+            });
+            response.result.files.forEach(f => {
+                result[f.id] = f;
+            });
+        } catch (err) {
+            console.error("Error fetching folders info:", err);
+        }
+    }
+    return result;
 };
 
 // Récupérer le contenu d'un fichier en blob

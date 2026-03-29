@@ -27,7 +27,7 @@ const Sidebar = ({
         <h1 style={{ fontSize: '1.25rem', fontWeight: '800', letterSpacing: '-0.5px' }}>JukeDrive</h1>
       </div>
 
-      <nav style={{ display: 'flex', flex_direction: 'column', gap: '0.5rem', flex: 1 }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
         <button 
           className={`nav-item ${currentView === 'home' ? 'active' : ''}`}
           onClick={() => onViewChange('home')}
