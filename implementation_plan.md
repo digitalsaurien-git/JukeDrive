@@ -1,41 +1,51 @@
-# Plan d'Amélioration : JukeDrive v1.2 (Correctif Auth inclus)
+# Plan de Migration : JukeBox-Box (Dropbox Edition) 📦
 
-## 1. Analyse des problèmes actuels
-- **Erreur Google OAuth (redirect_uri_mismatch)** : Lorsque l'application est déployée sur Vercel (`juke-drive.vercel.app`), Google rejette la demande car l'URL de l'application n'est pas autorisée dans votre console Google Cloud.
-- **Chevauchement d'Interface** : La barre du lecteur (`player-bar`) chevauche le menu de gauche (`sidebar`) en bas de l'écran car elle est centrée de manière absolue. Cela cache le bouton de statut de connexion.
-- **Scan Silencieux ("Ne fait rien")** : Le scan de tous les fichiers audio du Drive retourne probablement 0 fichier ou échoue sans prévenir. Le scan est basé sur l'indexation Google qui peut être lente ou incomplète pour les fichiers audio.
+Ce plan vise à abandonner les contraintes d'authentification de Google Drive au profit de votre compte Dropbox 2 To, offrant plus de stabilité et de stockage pour vos MP3.
 
-## 2. Changements Proposés
+## Étape PRÉALABLE (Action Requise de votre part)
+Pour que l'application puisse parler à votre Dropbox, vous devez enregistrer une "App" :
 
-### A. Résolution de l'erreur "redirect_uri_mismatch"
-Cette correction doit être faite dans votre **Console Google Cloud**, car c'est une sécurité côté Google.
+1.  Allez sur la [Console Developer Dropbox](https://www.dropbox.com/developers/apps/create).
+2.  Choisissez **"Scoped Access"**.
+3.  Type d'accès : **"Full Dropbox"** (recommandé pour votre structure /MUSIC).
+4.  Nommez votre application (ex: "MonJukeBox_Mog") et créez-la.
+5.  Dans l'onglet **Permissions**, cochez : `files.metadata.read` et `files.content.read`. **Cliquez sur "Submit"** en bas.
+6.  Dans l'onglet **Settings**, sous "Redirect URIs", ajoutez : `https://juke-drive.vercel.app` (si vous testez sur Vercel) et `http://localhost:5173` (pour le développement).
+7.  Récupérez votre **"App key"** (Identifiant client).
+
+## Proposed Changes
+
+### Configuration & Dépendances
+#### [MODIFY] [package.json](file:///c:/Data/Antigravity/projects/jukebox/package.json)
+- Ajout de la bibliothèque `dropbox`.
+
+#### [MODIFY] [config.js](file:///c:/Data/Antigravity/projects/jukebox/src/config.js)
+- Remplacement du Client ID Google par le `DROPBOX_APP_KEY`.
+- Stockage d'un `DROPBOX_ACCESS_TOKEN` dans le localStorage après connexion.
+
+#### [NEW] [dropboxService.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/dropboxService.js)
+- Implémentation de `loginDropbox()` (OAuth2 avec PKCE).
+- Implémentation du scanner récursif `scanDropboxMusic(rootPath)`.
+- Implémentation de `getStreamUrl(path)` pour générer des liens `temporaryLink` (valides 4h).
+
+### Logique Applicative
+#### [MODIFY] [App.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/App.jsx)
+- Changement de l'interface de connexion pour Dropbox.
+- Mise à jour du flux de "Callback" après authentification.
+
+#### [MODIFY] [useMusicScanner.js](file:///c:/Data/Antigravity/projects/jukebox/src/hooks/useMusicScanner.js)
+- Remplacement des appels à `googleDrive` par `dropboxService`.
+- Adaptation du parsing de l'arborescence (Dropbox utilise des chemins `/Mon/Chemin/Musique.mp3`).
+
+#### [MODIFY] [Player.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/Player.jsx)
+- Récupération du lien de streaming Dropbox avant de lancer la lecture d'une nouvelle chanson.
+
+## Questions Ouvertes
 
 > [!IMPORTANT]
-> **Action requise de votre part :**
-> 1. Allez sur la [Console Google Cloud](https://console.cloud.google.com/apis/credentials).
-> 2. Cliquez sur votre **Identifiant Client OAuth 2.0** que vous utilisez pour JukeDrive.
-> 3. Dans la section **Origines JavaScript autorisées**, ajoutez : `https://juke-drive.vercel.app`
-> 4. (Par sécurité) Dans la section **URI de redirection autorisés**, ajoutez aussi : `https://juke-drive.vercel.app`
-> 5. Enregistrez et attendez 5 à 10 minutes que Google mette à jour ses serveurs.
-
-### B. Correction UI (Sidebar & Player)
-#### [MODIFY] [Sidebar.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/components/Sidebar.jsx)
-- Ajout d'un `paddingBottom: '120px'` sur la sidebar pour que le bouton "Connecté" reste visible au-dessus du lecteur.
-- Affichage de l'erreur du scanner si le token expire ou si la recherche échoue.
-
-#### [MODIFY] [index.css](file:///c:/Data/Antigravity/projects/jukebox/src/index.css)
-- Ajustements pour que le `player-bar` ne recouvre pas les contrôles essentiels.
-
-### C. Moteur de Recherche "Scan Profond" (Arborescence MUSIC)
-#### [MODIFY] [googleDrive.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/googleDrive.js)
-- Implémentation du `scanMusicTree(rootId)` qui parcourt récursivement : **MUSIC > Artiste > Album > Chansons**.
-- Cela garantit de trouver TOUS vos fichiers, même si Google ne les a pas encore indexés comme "audio".
-
-## 3. Questions Ouvertes
-
-- **Structure des dossiers** : Me confirmez-vous que vos musiques sont bien rangées selon `MUSIC / Artiste / Album / Chanson.mp3` ? Si oui, le nouveau scanner sera parfait.
-- **ID du dossier** : Je vais ajouter un champ dans la page de config pour que vous puissiez coller l'ID de votre dossier "MUSIC".
+> - **Chemin Racine** : Souhaitez-vous que le scanner commence par défaut dans un dossier spécifique (ex: `/MUSIC`) ou qu'il scanne tout votre Dropbox ?
+> - **Connexion** : Préférez-vous une connexion par "Pop-up" ou par "Redirection" ? (La redirection est plus robuste, mais le pop-up est plus fluide).
 
 ---
 
-Je peux commencer par appliquer les corrections de code (UI + Scanner) pendant que vous mettez à jour votre console Google Cloud. Voulez-vous que je procède ?
+Une fois que vous me validez ce plan et que vous avez votre **App Key**, je lance la transformation !

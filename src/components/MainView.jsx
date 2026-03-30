@@ -19,10 +19,10 @@ const MainView = ({
     return (
       <div className="content-main">
         <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem', letterSpacing: '-1px' }}>
-          Bienvenue sur <span style={{ color: 'var(--accent-color)' }}>JukeDrive</span>
+          Bienvenue sur <span style={{ color: 'var(--accent-color)' }}>JukeBox-Box</span>
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '600px' }}>
-          Votre bibliothèque musicale personnelle, propulsée par Google Drive. Branchez vos écouteurs et profitez.
+          Votre bibliothèque musicale personnelle, propulsée par vos 2 To de stockage Dropbox. Branchez vos écouteurs et profitez.
         </p>
 
         <div style={{ display: 'flex', gap: '1rem', marginBottom: '4rem' }}>

@@ -1,19 +1,14 @@
-// Configuration pour JukeDrive
-// L'utilisateur peut fournir son CLIENT_ID ici ou via une interface UI.
-
-export const GOOGLE_CONFIG = {
-  CLIENT_ID: localStorage.getItem('jukedrive_client_id') || '',
-  MUSIC_FOLDER_ID: localStorage.getItem('jukedrive_music_folder_id') || '',
-  SCOPES: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.metadata.readonly',
-  DISCOVERY_DOCS: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+export const DROPBOX_CONFIG = {
+  APP_KEY: localStorage.getItem('jukedrive_dropbox_app_key') || '',
+  ROOT_PATH: localStorage.getItem('jukedrive_dropbox_root') || '', // Ex: /MUSIC
 };
 
-export const setClientId = (id) => {
-  localStorage.setItem('jukedrive_client_id', id);
+export const setDropboxAppKey = (key) => {
+  localStorage.setItem('jukedrive_dropbox_app_key', key);
   window.location.reload();
 };
 
-export const setMusicFolderId = (id) => {
-  localStorage.setItem('jukedrive_music_folder_id', id);
+export const setDropboxRoot = (path) => {
+  localStorage.setItem('jukedrive_dropbox_root', path);
   window.location.reload();
 };

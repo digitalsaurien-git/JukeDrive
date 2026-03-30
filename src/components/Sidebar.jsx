@@ -25,7 +25,7 @@ const Sidebar = ({
         }}>
           <Disc size={24} color="white" />
         </div>
-        <h1 style={{ fontSize: '1.25rem', fontWeight: '800', letterSpacing: '-0.5px' }}>JukeDrive</h1>
+        <h1 style={{ fontSize: '1.25rem', fontWeight: '800', letterSpacing: '-0.5px' }}>JukeBox-Box</h1>
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>
@@ -74,7 +74,7 @@ const Sidebar = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <button className="btn-scan" onClick={onScan} disabled={isScanning}>
               <RefreshCw size={18} className={isScanning ? 'spin' : ''} />
-              <span>{isScanning ? 'Analyse...' : 'Scanner le Drive'}</span>
+              <span>{isScanning ? 'Analyse...' : 'Analyser Dropbox'}</span>
             </button>
             {error && (
               <div style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>

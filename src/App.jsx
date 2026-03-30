@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { initGapiClient, initTokenClient, login } from './services/googleDrive';
-import { GOOGLE_CONFIG, setClientId } from './config';
+import { getAuthUrl, handleAuthCallback, initDropbox } from './services/dropboxService';
+import { DROPBOX_CONFIG, setDropboxAppKey, setDropboxRoot } from './config';
 import Sidebar from './components/Sidebar';
 import MainView from './components/MainView';
 import Player from './components/Player';
@@ -9,7 +9,6 @@ import { useMusicScanner } from './hooks/useMusicScanner';
 import { usePlaylistStore } from './store/usePlaylistStore';
 
 function App() {
-  const [isApiLoaded, setIsApiLoaded] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [currentView, setCurrentView] = useState('home');
   const [playingQueue, setPlayingQueue] = useState([]);
@@ -19,45 +18,21 @@ function App() {
   const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylistStore();
 
   useEffect(() => {
-    const handleCallback = (token) => {
-      console.log("Logged in successfully!");
+    const token = handleAuthCallback();
+    if (token) {
       setAccessToken(token);
-      // Auto-scan on login
-      // scan(); 
-    };
-
-    const loadScripts = async () => {
-       try {
-         await initGapiClient();
-         initTokenClient(handleCallback);
-         setIsApiLoaded(true);
-       } catch (err) {
-         console.error('Failed to init Google APIs:', err);
-       }
-    };
-
-    if (GOOGLE_CONFIG.CLIENT_ID) {
-      // Small delay to ensure scripts are fully ready
-      const timer = setTimeout(loadScripts, 500);
-      return () => clearTimeout(timer);
+      initDropbox(token);
     }
   }, []);
 
-  // When playing queue changes or scanning, try to load metadata for next songs
-  useEffect(() => {
-    if (accessToken && playingQueue.length > 0 && currentIndex >= 0) {
-       const currentSong = playingQueue[currentIndex];
-       if (!currentSong.metadata) {
-          loadMetadata(currentSong.id).then(meta => {
-             // Update the queue with metadata directly
-             setPlayingQueue(prev => prev.map((s, i) => i === currentIndex ? { ...s, metadata: meta } : s));
-          });
-       }
+  const handleLogin = () => {
+    if (!DROPBOX_CONFIG.APP_KEY) {
+      alert("App Key manquante !");
+      return;
     }
-  }, [playingQueue, currentIndex, accessToken, loadMetadata]);
-
-  // When scanning finishes, if we have new songs without metadata, we could optionally preload them
-  // For UI simplicity, wait until they click play to load metadate (unless already cached)
+    const url = getAuthUrl(DROPBOX_CONFIG.APP_KEY);
+    window.location.href = url;
+  };
 
   const handlePlayList = (list, startIndex = 0) => {
     setPlayingQueue(list);
@@ -70,7 +45,6 @@ function App() {
     if (currentIndex < playingQueue.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      // Loop or stop
       setCurrentIndex(0);
     }
   };
@@ -81,33 +55,32 @@ function App() {
     }
   };
 
-  if (!GOOGLE_CONFIG.CLIENT_ID || !GOOGLE_CONFIG.MUSIC_FOLDER_ID) {
+  // CONFIGURATION INITIALE
+  if (!DROPBOX_CONFIG.APP_KEY) {
     return (
       <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
          <div className="glass-panel" style={{ padding: '3rem', maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-            <h1 style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Configuration Initiale</h1>
+            <h1 style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Config JukeBox-Box</h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-              Configurez vos accès pour commencer à écouter.
+              Connectez votre Dropbox (2 To d'espace !)
             </p>
             
             <div style={{ textAlign: 'left', marginBottom: '1rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>Google Client ID :</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>Dropbox App Key :</label>
               <input 
                 type="text" 
-                id="clientIdInput"
-                defaultValue={GOOGLE_CONFIG.CLIENT_ID}
-                placeholder="Ex: 123-xxx.apps.googleusercontent.com" 
+                id="appKeyInput"
+                placeholder="Votre App Key de la console dev" 
                 style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginTop: '0.25rem' }}
               />
             </div>
 
             <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
-              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>ID du Dossier "MUSIC" :</label>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>Dossier Musique (Optionnel) :</label>
               <input 
                 type="text" 
-                id="musicFolderIdInput"
-                defaultValue={GOOGLE_CONFIG.MUSIC_FOLDER_ID}
-                placeholder="Identifiant long dans l'URL Google Drive" 
+                id="rootPathInput"
+                placeholder="Ex: /MUSIC" 
                 style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginTop: '0.25rem' }}
               />
             </div>
@@ -116,31 +89,31 @@ function App() {
               className="btn-primary" 
               style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => {
-                const clientId = document.getElementById('clientIdInput').value;
-                const musicId = document.getElementById('musicFolderIdInput').value;
-                if (clientId) localStorage.setItem('jukedrive_client_id', clientId);
-                if (musicId) localStorage.setItem('jukedrive_music_folder_id', musicId);
-                window.location.reload();
+                const key = document.getElementById('appKeyInput').value;
+                const path = document.getElementById('rootPathInput').value;
+                if (key) setDropboxAppKey(key);
+                if (path) setDropboxRoot(path);
               }}
             >
-              Enregistrer & Recharger
+              Enregistrer
             </button>
          </div>
       </div>
     );
   }
 
+  // ÉCRAN DE CONNEXION
   if (!accessToken) {
     return (
       <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
         <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem' }}>
-          Juke<span style={{ color: 'var(--accent-color)' }}>Drive</span>
+          JukeBox<span style={{ color: 'var(--accent-color)' }}>-Box</span>
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '3rem' }}>
-          Connectez votre dossier Google Drive pour lancer la musique.
+          Votre bibliothèque Dropbox personnelle.
         </p>
-        <button className="btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.25rem' }} disabled={!isApiLoaded} onClick={login}>
-          {isApiLoaded ? 'Se connecter avec Google' : 'Chargement...'}
+        <button className="btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.25rem' }} onClick={handleLogin}>
+          Se connecter avec Dropbox
         </button>
         {error && <div style={{ color: '#ef4444', marginTop: '1rem' }}>{error}</div>}
       </div>
@@ -169,6 +142,7 @@ function App() {
         removeFromPlaylist={removeFromPlaylist}
         deletePlaylist={deletePlaylist}
         accessToken={accessToken}
+        isDropbox={true}
       />
 
       <Player 
@@ -177,6 +151,7 @@ function App() {
         onNext={handleNext}
         onPrev={handlePrev}
         accessToken={accessToken}
+        isDropbox={true}
       />
     </div>
   );

@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
-import { getFileBlob } from '../services/googleDrive';
+import { getStreamUrl } from '../services/dropboxService';
 
-const Player = ({ currentSong, playlist, onNext, onPrev, accessToken }) => {
+const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox }) => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -13,24 +13,22 @@ const Player = ({ currentSong, playlist, onNext, onPrev, accessToken }) => {
   useEffect(() => {
     if (currentSong && accessToken) {
       setIsLoading(true);
-      // Clean up previous URL
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-      }
       setAudioUrl(null);
       
-      getFileBlob(currentSong.id, accessToken)
-        .then(blob => {
-          const url = URL.createObjectURL(blob);
+      const fetchUrl = async () => {
+        try {
+          const url = await getStreamUrl(currentSong.path || currentSong.id);
           setAudioUrl(url);
           setIsLoading(false);
-        })
-        .catch(err => {
-          console.error("Erreur de chargement audio", err);
+        } catch (err) {
+          console.error("Erreur de chargement audio Dropbox", err);
           setIsLoading(false);
-        });
+        }
+      };
+
+      fetchUrl();
     }
-  }, [currentSong, accessToken]);
+  }, [currentSong, accessToken, isDropbox]);
 
   useEffect(() => {
     if (audioUrl && audioRef.current) {
