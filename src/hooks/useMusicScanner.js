@@ -80,8 +80,8 @@ export const useMusicScanner = (accessToken) => {
             localStorage.setItem(CACHE_KEY, JSON.stringify({ songs: newSongs, albums: newAlbums }));
             setIsScanning(false);
         } catch (err) {
-            console.error("Scan error:", err);
-            setError("Erreur de scan Dropbox. Vérifiez vos permissions.");
+            console.error("Scan error details:", err);
+            setError(`Erreur Scan : ${err.message || "Vérifiez vos permissions Dropbox"}`);
             setIsScanning(false);
         }
     }, [accessToken]);

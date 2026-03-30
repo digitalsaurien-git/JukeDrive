@@ -73,31 +73,40 @@ export const scanDropboxMusic = async (path = '') => {
     let hasMore = true;
     let cursor = null;
 
+    // Normalisation du chemin : Dropbox veut "" ou "/" pour la racine, ou "/nom_dossier"
+    let cleanPath = path;
+    if (cleanPath === '/' || cleanPath === '.') cleanPath = '';
+    if (cleanPath && !cleanPath.startsWith('/')) cleanPath = '/' + cleanPath;
+
     try {
         while (hasMore) {
             const response = cursor 
                 ? await dbx.filesListFolderContinue({ cursor })
                 : await dbx.filesListFolder({ 
-                    path, 
+                    path: cleanPath, 
                     recursive: true,
-                    include_media_info: true 
+                    include_media_info: false // Plus robuste si désactivé par défaut
                 });
 
             const entries = response.result.entries;
-            // Filtrer pour ne garder que les fichiers audio
             const audioFiles = entries.filter(e => 
                 e['.tag'] === 'file' && 
-                (e.name.endsWith('.mp3') || e.name.endsWith('.m4a') || e.name.endsWith('.wav'))
+                (e.name.toLowerCase().endsWith('.mp3') || 
+                 e.name.toLowerCase().endsWith('.m4a') || 
+                 e.name.toLowerCase().endsWith('.wav'))
             );
             
             allFiles = [...allFiles, ...audioFiles];
             hasMore = response.result.has_more;
             cursor = response.result.cursor;
         }
-
         return allFiles;
     } catch (error) {
-        console.error("Dropbox Scan Error:", error);
+        console.error("Dropbox Detailed Scan Error:", error);
+        // On renvoie un objet d'erreur structuré pour l'UI
+        if (error.error?.error_summary) {
+            throw new Error(`Dropbox: ${error.error.error_summary}`);
+        }
         throw error;
     }
 };
