@@ -41,7 +41,93 @@ const MainView = ({
     }));
   };
 
-  // VUE RECHERCHE GLOBALE
+  // --- PRIORITÉ 1 : DÉTAIL ALBUM (TITRES) ---
+  if (selectedAlbum) {
+    return (
+      <div className="content-main">
+        <button onClick={() => setSelectedAlbum(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          ← Retour
+        </button>
+        
+        <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ width: '250px', height: '250px', background: '#222', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative' }}>
+             <img 
+               src={selectedAlbum.data.cover || getAICover(selectedArtist || selectedAlbum.data.artist, selectedAlbum.name)} 
+               alt={selectedAlbum.name} 
+               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+             />
+             <button 
+               onClick={() => regenerateCover(selectedArtist || selectedAlbum.data.artist, selectedAlbum.name)}
+               title="Régénérer la pochette IA"
+               style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}
+             >
+               ✨
+             </button>
+          </div>
+          <div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Album</p>
+            <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0.5rem', lineHeight: '1.1' }}>{selectedAlbum.name}</h1>
+            <p style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>
+              <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>{selectedArtist || selectedAlbum.data.artist}</span> • {selectedAlbum.data.songs.length} titres
+            </p>
+            <button className="btn-primary" onClick={() => onPlayList(selectedAlbum.data.songs, 0)}>
+               <Play size={20} /> Tout écouter
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {selectedAlbum.data.songs.map((song, index) => (
+            <div 
+              key={song.id} 
+              className="track-row" 
+              style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+              onClick={() => onPlayList(selectedAlbum.data.songs, index)}
+            >
+              <div style={{ width: '30px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{index + 1}</div>
+              <div style={{ flex: 1, fontWeight: '500' }}>{song.metadata?.title || song.name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{selectedArtist || selectedAlbum.data.artist}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- PRIORITÉ 2 : ALBUMS DE L'ARTISTE ---
+  if (selectedArtist) {
+    const artistAlbums = artists[selectedArtist]?.albums || {};
+    return (
+      <div className="content-main">
+        <div style={{ marginBottom: '2rem' }}>
+          <button onClick={() => setSelectedArtist(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ← Retour
+          </button>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{selectedArtist}</h1>
+        </div>
+
+        <div className="album-grid">
+          {Object.entries(artistAlbums).map(([albumName, albumData]) => (
+            <div key={albumName} className="album-card glass-panel" onClick={() => setSelectedAlbum({ name: albumName, data: albumData })}>
+              <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <img 
+                   src={albumData.cover || getAICover(selectedArtist, albumName)} 
+                   alt={albumName} 
+                   loading="lazy"
+                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
+                />
+              </div>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem' }}>{albumName}</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{albumData.songs.length} titres</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // --- VUES DE BASE (Home, Search, Categories) ---
+
   if (currentView === 'search') {
     const normalSearch = globalSearch.toLowerCase();
     
@@ -70,7 +156,7 @@ const MainView = ({
             <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent-color)' }}>Artistes</h2>
             <div className="album-grid">
               {matchedArtists.map(name => (
-                <div key={name} className="album-card glass-panel" onClick={() => { setSelectedArtist(name); onViewChange('artists'); }}>
+                <div key={name} className="album-card glass-panel" onClick={() => setSelectedArtist(name)}>
                    <div className="album-cover" style={{ borderRadius: '50%', background: '#222', overflow: 'hidden' }}>
                       <img src={`https://image.pollinations.ai/prompt/Artist%20portrait%20symbol%20for%20${encodeURIComponent(name)}?width=300&height=300&nologo=true`} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
                    </div>
@@ -86,7 +172,7 @@ const MainView = ({
             <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent-color)' }}>Albums</h2>
             <div className="album-grid">
               {matchedAlbums.map(([name, data]) => (
-                <div key={name} className="album-card glass-panel" onClick={() => { setSelectedArtist(data.artist); setSelectedAlbum({ name, data }); onViewChange('albums'); }}>
+                <div key={name} className="album-card glass-panel" onClick={() => { setSelectedArtist(data.artist); setSelectedAlbum({ name, data }); }}>
                    <div className="album-cover" style={{ background: '#222' }}>
                       <img src={data.cover || getAICover(data.artist, name)} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
                    </div>
@@ -205,91 +291,7 @@ const MainView = ({
     );
   }
 
-  // VUE ALBUMS DE L'ARTISTE
-  if (selectedArtist && !selectedAlbum) {
-    const artistAlbums = artists[selectedArtist].albums;
-    return (
-      <div className="content-main">
-        <div style={{ marginBottom: '2rem' }}>
-          <button onClick={() => setSelectedArtist(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            ← Retour aux artistes
-          </button>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{selectedArtist}</h1>
-        </div>
-
-        <div className="album-grid">
-          {Object.entries(artistAlbums).map(([albumName, albumData]) => (
-            <div key={albumName} className="album-card glass-panel" onClick={() => setSelectedAlbum({ name: albumName, data: albumData })}>
-              <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <img 
-                   src={albumData.cover || getAICover(selectedArtist, albumName)} 
-                   alt={albumName} 
-                   loading="lazy"
-                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
-                />
-              </div>
-              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem' }}>{albumName}</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{albumData.songs.length} titres</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // VUE DÉTAIL ALBUM (TITRES)
-  if (selectedAlbum) {
-    return (
-      <div className="content-main">
-        <button onClick={() => setSelectedAlbum(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          ← Retour à l'artiste
-        </button>
-        
-        <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ width: '250px', height: '250px', background: '#222', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative' }}>
-             <img 
-               src={selectedAlbum.data.cover || getAICover(selectedArtist, selectedAlbum.name)} 
-               alt={selectedAlbum.name} 
-               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-             />
-             <button 
-               onClick={() => regenerateCover(selectedArtist, selectedAlbum.name)}
-               title="Régénérer la pochette IA"
-               style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}
-             >
-               ✨
-             </button>
-          </div>
-          <div>
-            <p style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Album</p>
-            <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0.5rem', lineHeight: '1.1' }}>{selectedAlbum.name}</h1>
-            <p style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>
-              <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>{selectedArtist}</span> • {selectedAlbum.data.songs.length} titres
-            </p>
-            <button className="btn-primary" onClick={() => onPlayList(selectedAlbum.data.songs, 0)}>
-               <Play size={20} /> Tout écouter
-            </button>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-          {selectedAlbum.data.songs.map((song, index) => (
-            <div 
-              key={song.id} 
-              className="track-row" 
-              style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
-              onClick={() => onPlayList(selectedAlbum.data.songs, index)}
-            >
-              <div style={{ width: '30px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{index + 1}</div>
-              <div style={{ flex: 1, fontWeight: '500' }}>{song.metadata?.title || song.name}</div>
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{selectedArtist}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+  // VUE TOUS LES ALBUMS
   if (currentView === 'albums') {
     const filteredAlbums = Object.entries(albums).filter(([albumName, album]) => 
       albumName.toLowerCase().includes(searchTerm.toLowerCase()) || 
