@@ -17,6 +17,26 @@ function App() {
   const { isScanning, songs, albums, artists, scan, loadMetadata, error } = useMusicScanner(accessToken);
   const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylistStore();
 
+  useEffect(() => {
+    const initAuth = async () => {
+      const token = await handleAuthCallback();
+      if (token) {
+        setAccessToken(token);
+        initDropbox(token);
+      }
+    };
+    initAuth();
+  }, []);
+
+  const handleLogin = async () => {
+    if (!DROPBOX_CONFIG.APP_KEY) {
+      alert("App Key manquante !");
+      return;
+    }
+    const url = await getAuthUrl(DROPBOX_CONFIG.APP_KEY);
+    window.location.href = url;
+  };
+
   const handlePlayList = (list, startIndex = 0) => {
     setPlayingQueue(list);
     setCurrentIndex(startIndex);
