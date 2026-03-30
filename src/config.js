@@ -1,5 +1,5 @@
 export const DROPBOX_CONFIG = {
-  APP_KEY: localStorage.getItem('jukedrive_dropbox_app_key') || '',
+  APP_KEY: localStorage.getItem('jukedrive_dropbox_app_key') || 'wck8ktmlfsowpmq',
   ROOT_PATH: localStorage.getItem('jukedrive_dropbox_root') || '', // Ex: /MUSIC
 };
 
