@@ -17,6 +17,7 @@ const MainView = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [coverSeeds, setCoverSeeds] = useState({});
 
   // Reset drill-down when view changes from sidebar
   React.useEffect(() => {
@@ -25,6 +26,19 @@ const MainView = ({
       setSelectedAlbum(null);
     }
   }, [currentView]);
+
+  const getAICover = (artist, album) => {
+    const seed = coverSeeds[`${artist}-${album}`] || 42;
+    const prompt = encodeURIComponent(`Professional artistic musical album cover design for ${album} by ${artist}, minimal, high quality, music art`);
+    return `https://image.pollinations.ai/prompt/${prompt}?width=512&height=512&seed=${seed}&nologo=true`;
+  };
+
+  const regenerateCover = (artist, album) => {
+    setCoverSeeds(prev => ({
+      ...prev,
+      [`${artist}-${album}`]: Math.floor(Math.random() * 1000)
+    }));
+  };
 
   if (currentView === 'home') {
     return (
@@ -45,13 +59,17 @@ const MainView = ({
         <h2 style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Derniers Albums Découverts</h2>
         <div className="album-grid">
           {Object.entries(albums).slice(0, 5).map(([albumName, albumData]) => (
-            <div key={albumName} className="album-card" onClick={() => onPlayList(albumData.songs, 0)}>
+            <div key={albumName} className="album-card" onClick={() => {
+                setSelectedArtist(albumData.artist);
+                setSelectedAlbum({ name: albumName, data: albumData });
+            }}>
               <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {albumData.cover ? (
-                   <img src={albumData.cover} alt={albumName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
-                ) : (
-                   <Album size={48} color="#555" />
-                )}
+                <img 
+                   src={albumData.cover || getAICover(albumData.artist, albumName)} 
+                   alt={albumName} 
+                   loading="lazy"
+                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
+                />
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{albumName}</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{albumData.artist || 'Artiste Inconnu'}</p>
@@ -87,8 +105,12 @@ const MainView = ({
         <div className="album-grid">
           {filteredArtists.map(artistName => (
             <div key={artistName} className="album-card glass-panel" onClick={() => setSelectedArtist(artistName)}>
-              <div className="album-cover" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #333, #111)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>{artistName[0]}</span>
+              <div className="album-cover" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #333, #111)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                <img 
+                   src={`https://image.pollinations.ai/prompt/Iconic%20modern%20minimalist%20artist%20portrait%20symbol%20for%20${encodeURIComponent(artistName)}?width=300&height=300&seed=10&nologo=true`} 
+                   alt={artistName}
+                   style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.7 }}
+                />
               </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '600', textAlign: 'center', marginTop: '1rem' }}>{artistName}</h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{Object.keys(artists[artistName].albums).length} albums</p>
@@ -115,7 +137,12 @@ const MainView = ({
           {Object.entries(artistAlbums).map(([albumName, albumData]) => (
             <div key={albumName} className="album-card glass-panel" onClick={() => setSelectedAlbum({ name: albumName, data: albumData })}>
               <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Album size={48} color="#555" />
+                <img 
+                   src={albumData.cover || getAICover(selectedArtist, albumName)} 
+                   alt={albumName} 
+                   loading="lazy"
+                   style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} 
+                />
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem' }}>{albumName}</h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{albumData.songs.length} titres</p>
@@ -134,16 +161,30 @@ const MainView = ({
           ← Retour à l'artiste
         </button>
         
-        <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', alignItems: 'flex-end' }}>
-          <div style={{ width: '200px', height: '200px', background: '#222', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
-             <Album size={80} color="#444" />
+        <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+          <div style={{ width: '250px', height: '250px', background: '#222', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', position: 'relative' }}>
+             <img 
+               src={selectedAlbum.data.cover || getAICover(selectedArtist, selectedAlbum.name)} 
+               alt={selectedAlbum.name} 
+               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+             />
+             <button 
+               onClick={() => regenerateCover(selectedArtist, selectedAlbum.name)}
+               title="Régénérer la pochette IA"
+               style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%', color: 'white', cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}
+             >
+               ✨
+             </button>
           </div>
           <div>
             <p style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Album</p>
-            <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0.5rem' }}>{selectedAlbum.name}</h1>
-            <p style={{ fontSize: '1.1rem' }}>
-              <span style={{ fontWeight: '600' }}>{selectedArtist}</span> • {selectedAlbum.data.songs.length} titres
+            <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0.5rem', lineHeight: '1.1' }}>{selectedAlbum.name}</h1>
+            <p style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>
+              <span style={{ fontWeight: '600', color: 'var(--accent-color)' }}>{selectedArtist}</span> • {selectedAlbum.data.songs.length} titres
             </p>
+            <button className="btn-primary" onClick={() => onPlayList(selectedAlbum.data.songs, 0)}>
+               <Play size={20} /> Tout écouter
+            </button>
           </div>
         </div>
 
