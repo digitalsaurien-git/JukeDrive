@@ -4,16 +4,27 @@ import { downloadAlbum, downloadPlaylist } from '../services/downloader';
 
 const MainView = ({ 
   currentView, 
+  onViewChange,
   songs, 
   albums, 
+  artists,
   playlists, 
-  onPlaySong, 
   onPlayList,
   removeFromPlaylist,
   deletePlaylist,
   accessToken
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedArtist, setSelectedArtist] = useState(null);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+
+  // Reset drill-down when view changes from sidebar
+  React.useEffect(() => {
+    if (['home', 'albums', 'artists', 'playlists'].includes(currentView)) {
+      setSelectedArtist(null);
+      setSelectedAlbum(null);
+    }
+  }, [currentView]);
 
   if (currentView === 'home') {
     return (
@@ -51,6 +62,109 @@ const MainView = ({
     );
   }
 
+  // VUE ARTISTES
+  if (currentView === 'artists' && !selectedArtist) {
+    const filteredArtists = Object.keys(artists).filter(name => 
+      name.toLowerCase().includes(searchTerm.toLowerCase())
+    ).sort();
+
+    return (
+      <div className="content-main">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '700' }}>Artistes</h1>
+          <div className="search-container" style={{ margin: 0, width: '300px' }}>
+            <Search size={20} color="var(--text-secondary)" />
+            <input 
+              type="text" 
+              placeholder="Rechercher un artiste..." 
+              className="search-input"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="album-grid">
+          {filteredArtists.map(artistName => (
+            <div key={artistName} className="album-card glass-panel" onClick={() => setSelectedArtist(artistName)}>
+              <div className="album-cover" style={{ borderRadius: '50%', background: 'linear-gradient(135deg, #333, #111)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--accent-color)' }}>{artistName[0]}</span>
+              </div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '600', textAlign: 'center', marginTop: '1rem' }}>{artistName}</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{Object.keys(artists[artistName].albums).length} albums</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // VUE ALBUMS DE L'ARTISTE
+  if (selectedArtist && !selectedAlbum) {
+    const artistAlbums = artists[selectedArtist].albums;
+    return (
+      <div className="content-main">
+        <div style={{ marginBottom: '2rem' }}>
+          <button onClick={() => setSelectedArtist(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            ← Retour aux artistes
+          </button>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '700' }}>{selectedArtist}</h1>
+        </div>
+
+        <div className="album-grid">
+          {Object.entries(artistAlbums).map(([albumName, albumData]) => (
+            <div key={albumName} className="album-card glass-panel" onClick={() => setSelectedAlbum({ name: albumName, data: albumData })}>
+              <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Album size={48} color="#555" />
+              </div>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem' }}>{albumName}</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{albumData.songs.length} titres</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // VUE DÉTAIL ALBUM (TITRES)
+  if (selectedAlbum) {
+    return (
+      <div className="content-main">
+        <button onClick={() => setSelectedAlbum(null)} style={{ background: 'none', border: 'none', color: 'var(--accent-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          ← Retour à l'artiste
+        </button>
+        
+        <div style={{ display: 'flex', gap: '2rem', marginBottom: '3rem', alignItems: 'flex-end' }}>
+          <div style={{ width: '200px', height: '200px', background: '#222', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+             <Album size={80} color="#444" />
+          </div>
+          <div>
+            <p style={{ fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Album</p>
+            <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '0.5rem' }}>{selectedAlbum.name}</h1>
+            <p style={{ fontSize: '1.1rem' }}>
+              <span style={{ fontWeight: '600' }}>{selectedArtist}</span> • {selectedAlbum.data.songs.length} titres
+            </p>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+          {selectedAlbum.data.songs.map((song, index) => (
+            <div 
+              key={song.id} 
+              className="track-row" 
+              style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+              onClick={() => onPlayList(selectedAlbum.data.songs, index)}
+            >
+              <div style={{ width: '30px', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{index + 1}</div>
+              <div style={{ flex: 1, fontWeight: '500' }}>{song.metadata?.title || song.name}</div>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{selectedArtist}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   if (currentView === 'albums') {
     const filteredAlbums = Object.entries(albums).filter(([albumName, album]) => 
       albumName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -76,32 +190,15 @@ const MainView = ({
 
         <div className="album-grid">
           {filteredAlbums.map(([albumName, albumData]) => (
-            <div key={albumName} className="album-card glass-panel" style={{ padding: '1rem' }}>
-              <div 
-                className="album-cover" 
-                style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                onClick={() => onPlayList(albumData.songs, 0)}
-              >
-                {albumData.cover ? (
-                   <img src={albumData.cover} alt={albumName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
-                ) : (
-                   <Album size={48} color="#555" />
-                )}
-                <div className="play-overlay" style={{ position: 'absolute', display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: 0, transition: '0.2s', background: 'rgba(0,0,0,0.5)', width: '100%', height: '100%', borderRadius: '12px', top:0, left:0}}>
-                   <Play size={48} color="white" />
-                </div>
+            <div key={albumName} className="album-card glass-panel" style={{ padding: '1rem' }} onClick={() => {
+                setSelectedArtist(albumData.artist);
+                setSelectedAlbum({ name: albumName, data: albumData });
+            }}>
+              <div className="album-cover" style={{ background: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Album size={48} color="#555" />
               </div>
               <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '0.25rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{albumName}</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>{albumData.artist || 'Artiste Inconnu'}</p>
-              
-              <button 
-                onClick={(e) => { e.stopPropagation(); downloadAlbum(albumName, albumData.songs, accessToken); }}
-                style={{ width: '100%', background: 'rgba(255,255,255,0.1)', border: 'none', padding: '0.5rem', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', transition: '0.2s' }}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-              >
-                <Download size={16} /> Télécharger
-              </button>
             </div>
           ))}
         </div>
@@ -155,13 +252,8 @@ const MainView = ({
                 className="glass-panel" 
                 style={{ display: 'flex', alignItems: 'center', padding: '1rem', cursor: 'pointer', transition: '0.2s' }}
                 onClick={() => onPlayList(playlist.songs, index)}
-                onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
-                onMouseOut={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
               >
                 <div style={{ width: '40px', color: 'var(--text-secondary)', fontWeight: '600' }}>{index + 1}</div>
-                <div style={{ width: '48px', height: '48px', borderRadius: '6px', background: '#333', marginRight: '1rem', overflow: 'hidden' }}>
-                    {song.metadata?.cover ? <img src={song.metadata.cover} style={{width:'100%', height:'100%', objectFit: 'cover'}} /> : null}
-                </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{song.metadata?.title || song.name}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{song.metadata?.artist || 'Inconnu'} • {song.metadata?.album || 'Inconnu'}</div>
@@ -169,7 +261,6 @@ const MainView = ({
                 <button 
                   onClick={(e) => { e.stopPropagation(); removeFromPlaylist(playlist.id, song.id); }}
                   style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.5rem' }}
-                  title="Retirer de la playlist"
                 >
                   <Trash2 size={20} />
                 </button>

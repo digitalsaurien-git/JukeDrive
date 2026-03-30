@@ -14,28 +14,8 @@ function App() {
   const [playingQueue, setPlayingQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
 
-  const { isScanning, songs, albums, scan, loadMetadata, error } = useMusicScanner(accessToken);
+  const { isScanning, songs, albums, artists, scan, loadMetadata, error } = useMusicScanner(accessToken);
   const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylistStore();
-
-  useEffect(() => {
-    const initAuth = async () => {
-      const token = await handleAuthCallback();
-      if (token) {
-        setAccessToken(token);
-        initDropbox(token);
-      }
-    };
-    initAuth();
-  }, []);
-
-  const handleLogin = async () => {
-    if (!DROPBOX_CONFIG.APP_KEY) {
-      alert("App Key manquante !");
-      return;
-    }
-    const url = await getAuthUrl(DROPBOX_CONFIG.APP_KEY);
-    window.location.href = url;
-  };
 
   const handlePlayList = (list, startIndex = 0) => {
     setPlayingQueue(list);
@@ -138,8 +118,10 @@ function App() {
       
       <MainView 
         currentView={currentView}
+        onViewChange={setCurrentView}
         songs={songs}
         albums={albums}
+        artists={artists}
         playlists={playlists}
         onPlayList={handlePlayList}
         removeFromPlaylist={removeFromPlaylist}

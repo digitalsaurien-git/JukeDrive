@@ -8,6 +8,7 @@ export const useMusicScanner = (accessToken) => {
     const [isScanning, setIsScanning] = useState(false);
     const [songs, setSongs] = useState([]);
     const [albums, setAlbums] = useState({});
+    const [artists, setArtists] = useState({});
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -16,6 +17,7 @@ export const useMusicScanner = (accessToken) => {
             const parsed = JSON.parse(cached);
             setSongs(parsed.songs || []);
             setAlbums(parsed.albums || {});
+            setArtists(parsed.artists || {});
         }
     }, []);
 
@@ -35,49 +37,67 @@ export const useMusicScanner = (accessToken) => {
 
             const newSongs = [];
             const newAlbums = {};
+            const newArtists = {};
 
             audioFiles.forEach(file => {
-                // Dropbox donne le chemin complet : /MUSIC/Artist/Album/Song.mp3
                 const parts = file.path_display.split('/');
-                // On essaie de deviner Artiste / Album selon la profondeur
-                // Si /MUSIC/Artist/Album/Song.mp3 -> parts est ["", "MUSIC", "Artist", "Album", "Song.mp3"]
                 
                 let artistName = 'Artiste Inconnu';
                 let albumName = 'Album Inconnu';
 
                 if (parts.length >= 4) {
-                    artistName = parts[parts.length - 3];
-                    albumName = parts[parts.length - 2];
+                    artistName = parts[parts.length - 3] || 'Artiste Inconnu';
+                    albumName = parts[parts.length - 2] || 'Album Inconnu';
                 } else if (parts.length === 3) {
-                    artistName = parts[parts.length - 2];
-                    albumName = artistName + " (Singles)";
+                    artistName = parts[parts.length - 2] || 'Artiste Inconnu';
+                    albumName = "Titres Isolés";
+                }
+
+                // Éviter les noms de dossiers vides
+                if (artistName === 'Reference' || artistName === 'Music' || artistName === 'Musique') {
+                    artistName = 'Artiste Inconnu';
                 }
 
                 const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
 
                 const song = {
-                    id: file.path_lower, // Le chemin est l'ID unique chez Dropbox
+                    id: file.path_lower,
                     name: file.name,
                     path: file.path_lower,
                     metadata: {
                         title: cleanTitle,
                         artist: artistName,
                         album: albumName,
-                        cover: null // Le SDK Dropbox ne donne pas de miniature facilement sans appel extra
+                        cover: null
                     }
                 };
 
                 newSongs.push(song);
 
+                // Groupement par Album
                 if (!newAlbums[albumName]) {
                     newAlbums[albumName] = { songs: [], artist: artistName, cover: null };
                 }
                 newAlbums[albumName].songs.push(song);
+
+                // Groupement par Artiste
+                if (!newArtists[artistName]) {
+                    newArtists[artistName] = { albums: {} };
+                }
+                if (!newArtists[artistName].albums[albumName]) {
+                    newArtists[artistName].albums[albumName] = { songs: [], cover: null };
+                }
+                newArtists[artistName].albums[albumName].songs.push(song);
             });
 
             setSongs(newSongs);
             setAlbums(newAlbums);
-            localStorage.setItem(CACHE_KEY, JSON.stringify({ songs: newSongs, albums: newAlbums }));
+            setArtists(newArtists);
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ 
+                songs: newSongs, 
+                albums: newAlbums,
+                artists: newArtists 
+            }));
             setIsScanning(false);
         } catch (err) {
             console.error("Scan error details:", err);

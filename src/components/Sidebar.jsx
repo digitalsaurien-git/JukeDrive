@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Disc, ListMusic, Plus, Search, RefreshCw, LogOut } from 'lucide-react';
+import { Home, Disc, ListMusic, Plus, Search, RefreshCw, LogOut, Album, Mic2 } from 'lucide-react';
 
 const Sidebar = ({ 
   onViewChange, 
@@ -41,8 +41,16 @@ const Sidebar = ({
           className={`nav-item ${currentView === 'albums' ? 'active' : ''}`}
           onClick={() => onViewChange('albums')}
         >
-          <Disc size={20} />
+          <Album size={20} />
           <span>Albums</span>
+        </button>
+
+        <button 
+          className={`nav-item ${currentView === 'artists' ? 'active' : ''}`}
+          onClick={() => onViewChange('artists')}
+        >
+          <Mic2 size={20} />
+          <span>Artistes</span>
         </button>
 
         <div style={{ margin: '1.5rem 0 0.75rem 0', color: 'var(--text-secondary)', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>
