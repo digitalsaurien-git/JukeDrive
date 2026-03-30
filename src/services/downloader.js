@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
-import { getFileBlob } from './googleDrive';
+import { getStreamUrl } from './dropboxService';
 
 export const downloadAlbum = async (albumName, songs, accessToken) => {
     const zip = new JSZip();
@@ -8,8 +8,11 @@ export const downloadAlbum = async (albumName, songs, accessToken) => {
 
     const downloadPromises = songs.map(async (song) => {
         try {
-            const blob = await getFileBlob(song.id, accessToken);
-            // On utilise le titre de la chanson si dispo, sinon le nom du fichier
+            // Pour Dropbox, on récupère le lien temporaire puis on fetch le blob
+            const url = await getStreamUrl(song.path || song.id);
+            const response = await fetch(url);
+            const blob = await response.blob();
+            
             const fileName = song.metadata ? `${song.metadata.title}.mp3` : song.name;
             folder.file(fileName, blob);
         } catch (err) {
@@ -24,6 +27,5 @@ export const downloadAlbum = async (albumName, songs, accessToken) => {
 };
 
 export const downloadPlaylist = async (playlistName, songs, accessToken) => {
-    // Similaire à l'album
     await downloadAlbum(playlistName, songs, accessToken);
 };
