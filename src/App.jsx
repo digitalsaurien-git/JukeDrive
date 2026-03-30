@@ -81,26 +81,46 @@ function App() {
     }
   };
 
-  if (!GOOGLE_CONFIG.CLIENT_ID) {
+  if (!GOOGLE_CONFIG.CLIENT_ID || !GOOGLE_CONFIG.MUSIC_FOLDER_ID) {
     return (
       <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
          <div className="glass-panel" style={{ padding: '3rem', maxWidth: '500px', width: '100%', textAlign: 'center' }}>
             <h1 style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Configuration Initiale</h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
-              Veuillez configurer votre Google Cloud Client ID (OAuth 2.0 Web Client) pour accéder à Drive.
+              Configurez vos accès pour commencer à écouter.
             </p>
-            <input 
-              type="text" 
-              id="clientIdInput"
-              placeholder="Ex: 123456789-xxxx.apps.googleusercontent.com" 
-              style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginBottom: '1rem' }}
-            />
+            
+            <div style={{ textAlign: 'left', marginBottom: '1rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>Google Client ID :</label>
+              <input 
+                type="text" 
+                id="clientIdInput"
+                defaultValue={GOOGLE_CONFIG.CLIENT_ID}
+                placeholder="Ex: 123-xxx.apps.googleusercontent.com" 
+                style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginTop: '0.25rem' }}
+              />
+            </div>
+
+            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+              <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '4px' }}>ID du Dossier "MUSIC" :</label>
+              <input 
+                type="text" 
+                id="musicFolderIdInput"
+                defaultValue={GOOGLE_CONFIG.MUSIC_FOLDER_ID}
+                placeholder="Identifiant long dans l'URL Google Drive" 
+                style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginTop: '0.25rem' }}
+              />
+            </div>
+
             <button 
               className="btn-primary" 
               style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => {
-                const id = document.getElementById('clientIdInput').value;
-                if (id) setClientId(id);
+                const clientId = document.getElementById('clientIdInput').value;
+                const musicId = document.getElementById('musicFolderIdInput').value;
+                if (clientId) localStorage.setItem('jukedrive_client_id', clientId);
+                if (musicId) localStorage.setItem('jukedrive_music_folder_id', musicId);
+                window.location.reload();
               }}
             >
               Enregistrer & Recharger

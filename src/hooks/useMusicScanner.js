@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { scanMusicTree, getFileBlob } from '../services/googleDrive';
 import { parseMetadata } from '../utils/metadata';
+import { GOOGLE_CONFIG } from '../config';
 
 const CACHE_KEY = 'jukedrive_music_cache';
 
@@ -25,11 +26,17 @@ export const useMusicScanner = (accessToken) => {
         setIsScanning(true);
         setError(null);
         try {
-            // ID du dossier Google Drive contenant la musique (Fixé pour cette instance Vercel)
-            const MUSIC_FOLDER_ID = '1J-EAg_yyAVuwvbwDyJoLCD_lc7bLNJle';
+            // ID du dossier Google Drive contenant la musique (depuis la config locale)
+            const rootId = GOOGLE_CONFIG.MUSIC_FOLDER_ID;
             
+            if (!rootId) {
+                setError("ID du dossier MUSIC non configuré.");
+                setIsScanning(false);
+                return;
+            }
+
             // Lancement de l'algorithme "Infaillible" (récupère 3 niveaux d'arborescence)
-            const { audioFiles, folderLookup } = await scanMusicTree(MUSIC_FOLDER_ID);
+            const { audioFiles, folderLookup } = await scanMusicTree(rootId);
             
             if (audioFiles.length === 0) {
                 setError("Aucun fichier audio trouvé dans le dossier fourni.");

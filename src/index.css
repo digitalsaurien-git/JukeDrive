@@ -66,10 +66,8 @@ body {
 .player-bar {
   position: fixed;
   bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 48px);
-  max-width: 1200px;
+  left: 304px; /* Sidebar width (280px) + Gap (24px) */
+  right: 24px;
   height: 96px;
   background: rgba(15, 20, 27, 0.85);
   backdrop-filter: blur(20px);
@@ -81,6 +79,7 @@ body {
   padding: 0 2rem;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   z-index: 1000;
+  max-width: calc(100% - 328px); /* Ensure it doesn't overflow right */
 }
 
 /* Button & UI elements */
