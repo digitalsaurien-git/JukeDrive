@@ -11,13 +11,49 @@ export const useMusicScanner = (accessToken) => {
     const [artists, setArtists] = useState({});
     const [error, setError] = useState(null);
 
+    // Fonction utilitaire pour grouper les musiques existantes
+    const groupMusic = (songList) => {
+        const newAlbums = {};
+        const newArtists = {};
+        
+        songList.forEach(song => {
+            const artist = song.metadata.artist || 'Artiste Inconnu';
+            const album = song.metadata.album || 'Album Inconnu';
+            
+            if (!newAlbums[album]) {
+                newAlbums[album] = { songs: [], artist, cover: null };
+            }
+            newAlbums[album].songs.push(song);
+
+            if (!newArtists[artist]) {
+                newArtists[artist] = { albums: {} };
+            }
+            if (!newArtists[artist].albums[album]) {
+                newArtists[artist].albums[album] = { songs: [], cover: null };
+            }
+            newArtists[artist].albums[album].songs.push(song);
+        });
+        return { albums: newAlbums, artists: newArtists };
+    };
+
     useEffect(() => {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
             const parsed = JSON.parse(cached);
-            setSongs(parsed.songs || []);
-            setAlbums(parsed.albums || {});
-            setArtists(parsed.artists || {});
+            let currentSongs = parsed.songs || [];
+            let currentAlbums = parsed.albums || {};
+            let currentArtists = parsed.artists || {};
+            
+            // Migration AUTO : si on a des musiques mais pas d'artistes, on regroupe
+            if (currentSongs.length > 0 && Object.keys(currentArtists).length === 0) {
+                const grouped = groupMusic(currentSongs);
+                currentAlbums = grouped.albums;
+                currentArtists = grouped.artists;
+            }
+
+            setSongs(currentSongs);
+            setAlbums(currentAlbums);
+            setArtists(currentArtists);
         }
     }, []);
 
@@ -36,26 +72,30 @@ export const useMusicScanner = (accessToken) => {
             }
 
             const newSongs = [];
-            const newAlbums = {};
-            const newArtists = {};
-
+            
             audioFiles.forEach(file => {
-                const parts = file.path_display.split('/');
+                // Chemin relatif : on enlève rootPath de path_display
+                // Ex: rootPath = /REF/MUSIC, file = /REF/MUSIC/Artist/Album/Song.mp3
+                // Relative = Artist/Album/Song.mp3
+                let relPath = file.path_display;
+                if (rootPath && relPath.toLowerCase().startsWith(rootPath.toLowerCase())) {
+                    relPath = relPath.substring(rootPath.length);
+                }
+                
+                // On nettoie les slashes au début (ex: /Artist/Album/Song.mp3 -> Artist/Album/Song.mp3)
+                const parts = relPath.split('/').filter(p => p.length > 0);
                 
                 let artistName = 'Artiste Inconnu';
                 let albumName = 'Album Inconnu';
 
-                if (parts.length >= 4) {
-                    artistName = parts[parts.length - 3] || 'Artiste Inconnu';
-                    albumName = parts[parts.length - 2] || 'Album Inconnu';
-                } else if (parts.length === 3) {
-                    artistName = parts[parts.length - 2] || 'Artiste Inconnu';
+                if (parts.length >= 3) {
+                    // Artist/Album/Song.mp3 -> Artist=parts[0], Album=parts[1]
+                    artistName = parts[0];
+                    albumName = parts[1];
+                } else if (parts.length === 2) {
+                    // Artist/Song.mp3 -> Artist=parts[0]
+                    artistName = parts[0];
                     albumName = "Titres Isolés";
-                }
-
-                // Éviter les noms de dossiers vides
-                if (artistName === 'Reference' || artistName === 'Music' || artistName === 'Musique') {
-                    artistName = 'Artiste Inconnu';
                 }
 
                 const cleanTitle = file.name.replace(/\.[^/.]+$/, "");
@@ -71,32 +111,18 @@ export const useMusicScanner = (accessToken) => {
                         cover: null
                     }
                 };
-
                 newSongs.push(song);
-
-                // Groupement par Album
-                if (!newAlbums[albumName]) {
-                    newAlbums[albumName] = { songs: [], artist: artistName, cover: null };
-                }
-                newAlbums[albumName].songs.push(song);
-
-                // Groupement par Artiste
-                if (!newArtists[artistName]) {
-                    newArtists[artistName] = { albums: {} };
-                }
-                if (!newArtists[artistName].albums[albumName]) {
-                    newArtists[artistName].albums[albumName] = { songs: [], cover: null };
-                }
-                newArtists[artistName].albums[albumName].songs.push(song);
             });
 
+            const { albums: finalAlbums, artists: finalArtists } = groupMusic(newSongs);
+
             setSongs(newSongs);
-            setAlbums(newAlbums);
-            setArtists(newArtists);
+            setAlbums(finalAlbums);
+            setArtists(finalArtists);
             localStorage.setItem(CACHE_KEY, JSON.stringify({ 
                 songs: newSongs, 
-                albums: newAlbums,
-                artists: newArtists 
+                albums: finalAlbums,
+                artists: finalArtists 
             }));
             setIsScanning(false);
         } catch (err) {
