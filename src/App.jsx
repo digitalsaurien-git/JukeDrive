@@ -25,12 +25,12 @@ function App() {
     }
   }, []);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!DROPBOX_CONFIG.APP_KEY) {
       alert("App Key manquante !");
       return;
     }
-    const url = getAuthUrl(DROPBOX_CONFIG.APP_KEY);
+    const url = await getAuthUrl(DROPBOX_CONFIG.APP_KEY);
     window.location.href = url;
   };
 

@@ -11,11 +11,10 @@ export const initDropbox = (accessToken) => {
 };
 
 // --- AUTHENTIFICATION ---
-export const getAuthUrl = (appKey) => {
-    const dbxAuth = new Dropbox({ clientId: appKey });
-    // Utilisation du mode token simple pour une SPA (Implicit Flow) - Plus facile à gérer sans backend
-    // Note: Dropbox recommande le mode code + PKCE, mais pour une app perso, l'Implicit est plus rapide.
-    const authUrl = dbxAuth.auth.getAuthenticationUrl(
+export const getAuthUrl = async (appKey) => {
+    const { DropboxAuth } = await import('dropbox');
+    const dbxAuth = new DropboxAuth({ clientId: appKey });
+    const authUrl = await dbxAuth.getAuthenticationUrl(
         window.location.origin,
         null,
         'token',
