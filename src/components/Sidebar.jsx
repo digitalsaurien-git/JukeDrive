@@ -76,6 +76,28 @@ const Sidebar = ({
               <RefreshCw size={18} className={isScanning ? 'spin' : ''} />
               <span>{isScanning ? 'Analyse...' : 'Analyser Dropbox'}</span>
             </button>
+            <div style={{ padding: '0 0.5rem' }}>
+              <input 
+                type="text" 
+                placeholder="Dossier (ex: /MUSIC)" 
+                defaultValue={localStorage.getItem('jukedrive_dropbox_root') || ''}
+                onBlur={(e) => {
+                  localStorage.setItem('jukedrive_dropbox_root', e.target.value);
+                  // Rafraîchir sans recharger toute la page
+                  window.location.reload(); 
+                }}
+                style={{ 
+                  width: '100%', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid var(--glass-border)', 
+                  borderRadius: '8px', 
+                  padding: '0.5rem', 
+                  color: 'white',
+                  fontSize: '0.75rem',
+                  outline: 'none'
+                }} 
+              />
+            </div>
             {error && (
               <div style={{ color: '#ef4444', fontSize: '0.75rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.1)', padding: '0.5rem', borderRadius: '8px' }}>
                 {error}
