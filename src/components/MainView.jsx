@@ -12,7 +12,8 @@ const MainView = ({
   onPlayList,
   removeFromPlaylist,
   deletePlaylist,
-  accessToken
+  accessToken,
+  globalSearch
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedArtist, setSelectedArtist] = useState(null);
@@ -21,7 +22,7 @@ const MainView = ({
 
   // Reset drill-down when view changes from sidebar
   React.useEffect(() => {
-    if (['home', 'albums', 'artists', 'playlists'].includes(currentView)) {
+    if (['home', 'albums', 'artists', 'playlists', 'search'].includes(currentView)) {
       setSelectedArtist(null);
       setSelectedAlbum(null);
     }
@@ -39,6 +40,89 @@ const MainView = ({
       [`${artist}-${album}`]: Math.floor(Math.random() * 1000)
     }));
   };
+
+  // VUE RECHERCHE GLOBALE
+  if (currentView === 'search') {
+    const normalSearch = globalSearch.toLowerCase();
+    
+    const matchedArtists = Object.keys(artists).filter(name => 
+      name.toLowerCase().includes(normalSearch)
+    );
+    
+    const matchedAlbums = Object.entries(albums).filter(([name, data]) => 
+      name.toLowerCase().includes(normalSearch) || (data.artist && data.artist.toLowerCase().includes(normalSearch))
+    );
+    
+    const matchedSongs = songs.filter(s => 
+      s.name.toLowerCase().includes(normalSearch) || 
+      (s.metadata?.title && s.metadata.title.toLowerCase().includes(normalSearch))
+    );
+
+    return (
+      <div className="content-main">
+        <h1 style={{ fontSize: '2.5rem', fontWeight: '700', marginBottom: '1rem' }}>Résultats pour "{globalSearch}"</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '3rem' }}>
+          {matchedArtists.length} artistes, {matchedAlbums.length} albums, {matchedSongs.length} titres trouvés.
+        </p>
+
+        {matchedArtists.length > 0 && (
+          <section style={{ marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent-color)' }}>Artistes</h2>
+            <div className="album-grid">
+              {matchedArtists.map(name => (
+                <div key={name} className="album-card glass-panel" onClick={() => { setSelectedArtist(name); onViewChange('artists'); }}>
+                   <div className="album-cover" style={{ borderRadius: '50%', background: '#222', overflow: 'hidden' }}>
+                      <img src={`https://image.pollinations.ai/prompt/Artist%20portrait%20symbol%20for%20${encodeURIComponent(name)}?width=300&height=300&nologo=true`} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.6 }} />
+                   </div>
+                   <h3 style={{ fontSize: '1.1rem', fontWeight: '600', textAlign: 'center', marginTop: '1rem' }}>{name}</h3>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {matchedAlbums.length > 0 && (
+          <section style={{ marginBottom: '4rem' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent-color)' }}>Albums</h2>
+            <div className="album-grid">
+              {matchedAlbums.map(([name, data]) => (
+                <div key={name} className="album-card glass-panel" onClick={() => { setSelectedArtist(data.artist); setSelectedAlbum({ name, data }); onViewChange('albums'); }}>
+                   <div className="album-cover" style={{ background: '#222' }}>
+                      <img src={data.cover || getAICover(data.artist, name)} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+                   </div>
+                   <h3 style={{ fontSize: '1rem', fontWeight: '600', marginTop: '0.5rem' }}>{name}</h3>
+                   <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{data.artist}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {matchedSongs.length > 0 && (
+          <section>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--accent-color)' }}>Titres</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {matchedSongs.slice(0, 20).map((song, index) => (
+                <div 
+                  key={song.id} 
+                  className="glass-panel" 
+                  style={{ display: 'flex', alignItems: 'center', padding: '1rem', cursor: 'pointer' }}
+                  onClick={() => onPlayList([song], 0)}
+                >
+                  <div style={{ width: '40px', color: 'var(--text-secondary)' }}>{index + 1}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '600' }}>{song.metadata?.title || song.name}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{song.metadata?.artist} • {song.metadata?.album}</div>
+                  </div>
+                  <Play size={20} color="var(--accent-color)" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+      </div>
+    );
+  }
 
   if (currentView === 'home') {
     return (

@@ -9,11 +9,13 @@ const Sidebar = ({
   onScan, 
   isScanning,
   error,
-  user
+  user,
+  globalSearch,
+  setGlobalSearch
 }) => {
   return (
     <aside className="sidebar">
-      <div style={{ marginBottom: '2.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+      <div style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
         <div style={{ 
           width: '40px', 
           height: '40px', 
@@ -26,6 +28,24 @@ const Sidebar = ({
           <Disc size={24} color="white" />
         </div>
         <h1 style={{ fontSize: '1.25rem', fontWeight: '800', letterSpacing: '-0.5px' }}>JukeBox-Box</h1>
+      </div>
+
+      <div className="search-container" style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '0.5rem 0.75rem' }}>
+        <Search size={18} color="rgba(255,255,255,0.4)" />
+        <input 
+          type="text" 
+          placeholder="Recherche globale..." 
+          style={{ background: 'none', border: 'none', color: 'white', padding: '0.5rem', fontSize: '0.85rem', width: '100%', outline: 'none' }}
+          value={globalSearch}
+          onChange={(e) => {
+            setGlobalSearch(e.target.value);
+            if (e.target.value.length > 0 && currentView !== 'search') {
+               onViewChange('search');
+            } else if (e.target.value.length === 0 && currentView === 'search') {
+               onViewChange('home');
+            }
+          }}
+        />
       </div>
 
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }}>

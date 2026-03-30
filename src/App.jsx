@@ -13,6 +13,7 @@ function App() {
   const [currentView, setCurrentView] = useState('home');
   const [playingQueue, setPlayingQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
+  const [globalSearch, setGlobalSearch] = useState('');
 
   const { isScanning, songs, albums, artists, scan, loadMetadata, error } = useMusicScanner(accessToken);
   const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylistStore();
@@ -134,6 +135,8 @@ function App() {
         isScanning={isScanning}
         error={error}
         user={accessToken}
+        globalSearch={globalSearch}
+        setGlobalSearch={setGlobalSearch}
       />
       
       <MainView 
@@ -148,6 +151,7 @@ function App() {
         deletePlaylist={deletePlaylist}
         accessToken={accessToken}
         isDropbox={true}
+        globalSearch={globalSearch}
       />
 
       <Player 
