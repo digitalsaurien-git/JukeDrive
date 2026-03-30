@@ -137,5 +137,5 @@ export const useMusicScanner = (accessToken) => {
         return null;
     }, []);
 
-    return { isScanning, songs, albums, scan, loadMetadata, error };
+    return { isScanning, songs, albums, artists, scan, loadMetadata, error };
 };
