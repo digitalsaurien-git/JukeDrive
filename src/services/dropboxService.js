@@ -14,26 +14,47 @@ export const initDropbox = (accessToken) => {
 export const getAuthUrl = async (appKey) => {
     const { DropboxAuth } = await import('dropbox');
     const dbxAuth = new DropboxAuth({ clientId: appKey });
+    
+    // Le mode PKCE est obligatoire pour les nouvelles apps
     const authUrl = await dbxAuth.getAuthenticationUrl(
         window.location.origin,
         null,
-        'token',
+        'code',
         'offline',
         null,
         'none',
-        false
+        true // PKCE activé
     );
+    
+    // Sauvegarder le code_verifier généré par le SDK pour l'échange final
+    sessionStorage.setItem('jukedrive_dbx_verifier', dbxAuth.getCodeVerifier());
     return authUrl;
 };
 
-export const handleAuthCallback = () => {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const token = params.get('access_token');
-    if (token) {
-        localStorage.setItem('jukedrive_dropbox_token', token);
-        // Nettoyer l'URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return token;
+export const handleAuthCallback = async () => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const code = queryParams.get('code');
+    const verifier = sessionStorage.getItem('jukedrive_dbx_verifier');
+
+    if (code && verifier) {
+        const { DropboxAuth } = await import('dropbox');
+        const dbxAuth = new DropboxAuth({ 
+            clientId: localStorage.getItem('jukedrive_dropbox_app_key') || 'wck8ktmlfsowpmq'
+        });
+        dbxAuth.setCodeVerifier(verifier);
+
+        try {
+            const response = await dbxAuth.getAccessTokenFromCode(window.location.origin, code);
+            const token = response.result.access_token;
+            if (token) {
+                localStorage.setItem('jukedrive_dropbox_token', token);
+                // Nettoyer l'URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                return token;
+            }
+        } catch (error) {
+            console.error("Erreur lors de l'échange du code PKCE:", error);
+        }
     }
     return localStorage.getItem('jukedrive_dropbox_token');
 };

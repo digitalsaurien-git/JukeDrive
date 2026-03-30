@@ -18,11 +18,14 @@ function App() {
   const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, deletePlaylist } = usePlaylistStore();
 
   useEffect(() => {
-    const token = handleAuthCallback();
-    if (token) {
-      setAccessToken(token);
-      initDropbox(token);
-    }
+    const initAuth = async () => {
+      const token = await handleAuthCallback();
+      if (token) {
+        setAccessToken(token);
+        initDropbox(token);
+      }
+    };
+    initAuth();
   }, []);
 
   const handleLogin = async () => {

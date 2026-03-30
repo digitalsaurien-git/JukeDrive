@@ -1,28 +1,24 @@
-# Plan de Correction : Build & Sync 🛠️
+# Plan de Correction : Authentification PKCE (Dropbox) 🔐
 
-Le déploiement a échoué car certains fichiers essayaient encore d'appeler l'ancien service Google Drive que j'avais supprimé. De plus, une bibliothèque de métadonnées cause un conflit avec l'outil de build moderne (Vite).
+Dropbox rejette l'ancienne méthode de connexion (mode "Implicit" / Token direct). Nous devons passer à la méthode **PKCE** (plus sécurisée et obligatoire pour les nouvelles apps).
 
 ## Proposed Changes
 
-### Correction de la Logique
-#### [MODIFY] [downloader.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/downloader.js)
-- Suppression de l'import de `googleDrive`.
-- Désactivation temporaire de la fonction de téléchargement (ou adaptation pour Dropbox) pour permettre au build de passer.
+### Mise à jour du Service Dropbox
+#### [MODIFY] [dropboxService.js](file:///c:/Data/Antigravity/projects/jukebox/src/services/dropboxService.js)
+- **getAuthUrl** : Changement du `response_type` vers `code`. Activation du mode PKCE qui génère un "code verifier" sécurisé.
+- **handleAuthCallback** : L'URL ne contiendra plus le jeton directement, mais un code temporaire. Nous ajouterons une étape d'échange (Token Exchange) pour obtenir le jeton final.
 
-#### [MODIFY] [metadata.js](file:///c:/Data/Antigravity/projects/jukebox/src/utils/metadata.js)
-- Vérification de l'import de `music-metadata-browser`. Si le problème persiste, nous passerons à une méthode plus légère pour la détection des tags.
-
-### Configuration du Build
-#### [NEW] [vite.config.js](file:///c:/Data/Antigravity/projects/jukebox/vite.config.js)
-- Ajout d'un "polyfill" ou d'une configuration pour gérer les dépendances Node.js (comme `util`) dont certaines bibliothèques ont besoin.
-
-### Synchronisation GitHub
-- Je vais forcer une nouvelle synchronisation propre pour m'assurer que les commits apparaissent bien sur votre interface GitHub.
+### Mise à jour de l'Interface
+#### [MODIFY] [App.jsx](file:///c:/Data/Antigravity/projects/jukebox/src/App.jsx)
+- Adaptation du `useEffect` de démarrage pour gérer l'échange de jeton asynchrone (await).
 
 ## Verification Plan
 
-### Automated Tests
-- `npm run build` doit se terminer sans erreur localement.
+### Manual Verification
+1.  Cliquer sur "Se connecter avec Dropbox".
+2.  Dropbox devrait maintenant afficher la page de demande d'autorisation au lieu de l'erreur `invalid_response_type`.
+3.  Après acceptation, le retour sur l'app doit synchroniser les musiques.
 
 ---
-Je lance les corrections dès que vous me donnez le feu vert !
+Une fois validé, je déploie cette correction immédiatement !
