@@ -90,8 +90,9 @@ function App() {
   const handleManualConnect = async () => {
     setAuthError(null);
     if (!manualToken) return;
-    const ok = await validateToken(manualToken);
-    if (ok) {
+    const res = await validateToken(manualToken);
+    if (res.ok) {
+      addLog(`Succès ! Connecté en tant que ${res.name}`);
       setAccessToken(manualToken);
       initDropbox(manualToken);
     } else {

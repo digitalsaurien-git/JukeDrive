@@ -103,12 +103,13 @@ export const handleAuthCallback = async () => {
 export const validateToken = async (token) => {
     try {
         const tempDbx = new Dropbox({ accessToken: token });
-        await tempDbx.usersGetCurrentAccount();
+        const res = await tempDbx.usersGetCurrentAccount();
+        const userName = res.result.name.display_name;
         localStorage.setItem('jukedrive_dropbox_token', token);
-        return true;
+        return { ok: true, name: userName };
     } catch (error) {
         console.error("Token invalide ou bloqué par le réseau:", error);
-        return false;
+        return { ok: false };
     }
 };
 
