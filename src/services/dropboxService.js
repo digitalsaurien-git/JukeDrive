@@ -11,6 +11,8 @@ export const initDropbox = (accessToken) => {
 };
 
 // --- AUTHENTIFICATION ---
+const DBX_SCOPES = ['files.content.read', 'files.metadata.read', 'account_info.read'];
+
 export const getAuthUrl = async (appKey) => {
     const { DropboxAuth } = await import('dropbox');
     const dbxAuth = new DropboxAuth({ clientId: appKey });
@@ -21,7 +23,7 @@ export const getAuthUrl = async (appKey) => {
         null,
         'code',
         'offline',
-        null,
+        DBX_SCOPES, // Ajout explicite des scopes
         'none',
         true // PKCE activé
     );
@@ -32,7 +34,6 @@ export const getAuthUrl = async (appKey) => {
 };
 
 // Mode Implicite : Le token est renvoyé directement dans l'URL (#access_token=...)
-// Avantage : Aucun appel API n'est nécessaire pour l'échange (idéal pour les proxys)
 export const getImplicitAuthUrl = async (appKey) => {
     const { DropboxAuth } = await import('dropbox');
     const dbxAuth = new DropboxAuth({ clientId: appKey });
@@ -41,7 +42,7 @@ export const getImplicitAuthUrl = async (appKey) => {
         null,
         'token', // Mode Implicit
         null,
-        null,
+        DBX_SCOPES, // Ajout explicite des scopes
         'none',
         false
     );
