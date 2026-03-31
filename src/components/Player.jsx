@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Play, Pause, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { getStreamUrl } from '../services/dropboxService';
 
-const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox }) => {
+const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox, addLog }) => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -12,16 +12,23 @@ const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox 
 
   useEffect(() => {
     if (currentSong && accessToken) {
+      if (typeof addLog === 'function') addLog(`Démarrage lecture : ${currentSong.name}`);
       setIsLoading(true);
-      setAudioUrl(null); // Force le rechargement
+      setAudioUrl(null); 
       
       const fetchUrl = async () => {
         try {
+          if (typeof addLog === 'function') addLog("Demande du lien temporaire à Dropbox...");
           const url = await getStreamUrl(currentSong.path || currentSong.id);
-          setAudioUrl(url);
+          if (url) {
+            if (typeof addLog === 'function') addLog("Lien reçu ! Chargement dans le lecteur...");
+            setAudioUrl(url);
+          } else {
+            if (typeof addLog === 'function') addLog("ERREUR: Le lien reçu est vide.");
+          }
           setIsLoading(false);
-          // On ne déclenche pas le play ici, on laisse l'audio charger
         } catch (err) {
+          if (typeof addLog === 'function') addLog(`ERREUR de stream: ${err.message}`);
           console.error("Erreur de chargement audio Dropbox", err);
           setIsLoading(false);
         }

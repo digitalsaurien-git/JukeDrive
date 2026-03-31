@@ -284,7 +284,18 @@ function App() {
         onPrev={handlePrev}
         accessToken={accessToken}
         isDropbox={true}
+        addLog={addLog}
       />
+
+      {/* Log Console Floating Support */}
+      <div style={{ position: 'fixed', bottom: '100px', right: '20px', zIndex: 1000, width: '300px', background: 'rgba(0,0,0,0.85)', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--glass-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+           <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.3rem' }}>
+             Diagnostic System
+           </h4>
+           <div style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#4ade80', lineHeight: '1.4' }}>
+              {logs.map((log, i) => <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2px 0' }}>{log}</div>)}
+           </div>
+      </div>
     </div>
   );
 }
