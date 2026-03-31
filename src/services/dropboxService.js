@@ -50,6 +50,10 @@ export const getImplicitAuthUrl = async (appKey) => {
 
 export const handleAuthCallback = async () => {
     // 1. Vérifier si on a un token dans le fragment (#access_token=...) - Priorité Proxy
+    const fullUrl = window.location.href;
+    const hasHash = !!window.location.hash;
+    const hasSearch = !!window.location.search;
+
     if (window.location.hash) {
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const token = hashParams.get('access_token');

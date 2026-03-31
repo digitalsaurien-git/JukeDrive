@@ -26,16 +26,22 @@ function App() {
 
   useEffect(() => {
     const initAuth = async () => {
-      addLog("Vérification de l'URL pour un retour Dropbox...");
+      const urlInfo = `URL: ${window.location.search ? '?' : ''}${window.location.hash ? '#' : ''} ${window.location.pathname}`;
+      addLog(`Diag: ${urlInfo}`);
+      
       try {
         const token = await handleAuthCallback();
         if (token) {
-          addLog("Token détecté dans l'URL ! Connexion...");
+          if (window.location.hash || window.location.search) {
+             addLog("Token détecté dans l'URL ! Connexion...");
+          } else {
+             addLog("Token chargé de la session précédente.");
+          }
           setAccessToken(token);
           initDropbox(token);
           addLog("Dropbox initialisé.");
         } else {
-          addLog("Aucun token trouvé dans l'URL. En attente de connexion.");
+          addLog("Aucun token trouvé (URL vide).");
         }
       } catch (err) {
         addLog(`ERREUR: ${err.message}`);
@@ -195,7 +201,7 @@ function App() {
 
             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                Ou collez un token généré manuellement :
+                Ou générez un token <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noreferrer" style={{ color: '#4ade80', textDecoration: 'underline' }}>ici dans la console Dropbox</a> et collez-le :
               </p>
               <input 
                 type="password" 
