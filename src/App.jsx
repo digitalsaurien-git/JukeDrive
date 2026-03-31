@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { getAuthUrl, getImplicitAuthUrl, handleAuthCallback, initDropbox, validateToken } from './services/dropboxService';
+import { getAuthUrl, getImplicitAuthUrl, handleAuthCallback, initDropbox, validateToken, logout } from './services/dropboxService';
 import { DROPBOX_CONFIG, setDropboxAppKey, setDropboxRoot } from './config';
 import Sidebar from './components/Sidebar';
 import MainView from './components/MainView';
@@ -95,6 +95,11 @@ function App() {
     } else {
       setAuthError("Token invalide ou accès bloqué par le proxy.");
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    setAccessToken(null);
   };
 
   const handlePlayList = (list, startIndex = 0) => {
@@ -264,6 +269,7 @@ function App() {
         isScanning={isScanning}
         error={error}
         user={accessToken}
+        onLogout={handleLogout}
         globalSearch={globalSearch}
         setGlobalSearch={setGlobalSearch}
       />

@@ -10,6 +10,7 @@ const Sidebar = ({
   isScanning,
   error,
   user,
+  onLogout,
   globalSearch,
   setGlobalSearch
 }) => {
@@ -140,7 +141,15 @@ const Sidebar = ({
             <div style={{ flex: 1, fontSize: '0.875rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               Connecté
             </div>
-            <LogOut size={16} style={{ cursor: 'pointer', opacity: 0.6 }} />
+            <button 
+              onClick={onLogout} 
+              title="Déconnexion"
+              style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', opacity: 0.6 }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = 0.6}
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         )}
       </div>
