@@ -202,13 +202,31 @@ function App() {
               Utilisez la connexion directe si le mode standard bloque. Dropbox renverra le token directement dans l'URL.
             </p>
             
-            <button className="btn-primary" style={{ width: '100%', marginBottom: '2rem', background: 'linear-gradient(135deg, #4ade80, #22c55e)' }} onClick={handleFastLogin}>
+            <button className="btn-primary" style={{ width: '100%', marginBottom: '1rem', background: 'linear-gradient(135deg, #4ade80, #22c55e)' }} onClick={handleFastLogin}>
               🚀 Connexion Directe (Zéro-Proxy)
+            </button>
+
+            <button 
+              onClick={async () => {
+                addLog("Test de connectivité API...");
+                try {
+                  const res = await fetch('https://api.dropboxapi.com/2/users/get_current_account', { method: 'POST', mode: 'no-cors' });
+                  addLog("API Dropbox joignable (CORS attendu).");
+                } catch (e) {
+                  addLog("ÉCHEC: L'API Dropbox est totalement bloquée par votre proxy.");
+                }
+              }}
+              style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.2)', color: 'var(--text-secondary)', fontSize: '0.75rem', marginBottom: '2rem', cursor: 'pointer' }}
+            >
+              🔍 Tester la connectivité API
             </button>
 
             <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                Ou générez un token <a href="https://www.dropbox.com/developers/apps" target="_blank" rel="noreferrer" style={{ color: '#4ade80', textDecoration: 'underline' }}>ici dans la console Dropbox</a> et collez-le :
+                <b>Méthode la plus discrète (Anti-Proxy) :</b><br/>
+                1. Générez un token sur votre <b>téléphone</b> (via la console Dropbox ou l'app).<br/>
+                2. Envoyez-le vous par <b>Email/Teams/Slack</b>.<br/>
+                3. Collez-le ici :
               </p>
               <input 
                 type="password" 
