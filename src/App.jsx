@@ -26,7 +26,8 @@ function App() {
 
   useEffect(() => {
     const initAuth = async () => {
-      const urlInfo = `URL: ${window.location.search ? '?' : ''}${window.location.hash ? '#' : ''} ${window.location.pathname}`;
+      const hashContent = window.location.hash ? window.location.hash.substring(0, 10) : 'aucun';
+      const urlInfo = `URL: ${window.location.search ? '?' : ''}${window.location.hash ? '#' : ''} ${window.location.pathname} (Hash: ${hashContent}...)`;
       addLog(`Diag: ${urlInfo}`);
       
       try {
@@ -35,7 +36,8 @@ function App() {
           if (window.location.hash || window.location.search) {
              addLog("Token détecté dans l'URL ! Connexion...");
           } else {
-             addLog("Token chargé de la session précédente.");
+             const obfuscatedToken = `${token.substring(0, 5)}***`;
+             addLog(`Token session : ${obfuscatedToken}`);
           }
           setAccessToken(token);
           initDropbox(token);
