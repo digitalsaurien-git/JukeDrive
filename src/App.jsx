@@ -13,7 +13,10 @@ function App() {
   const [isExpertMode, setIsExpertMode] = useState(false);
   const [manualToken, setManualToken] = useState('');
   const [authError, setAuthError] = useState(null);
+  const [logs, setLogs] = useState(["Initialisation..."]);
   const [currentView, setCurrentView] = useState('home');
+
+  const addLog = (msg) => setLogs(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
   const [playingQueue, setPlayingQueue] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [globalSearch, setGlobalSearch] = useState('');
@@ -23,13 +26,19 @@ function App() {
 
   useEffect(() => {
     const initAuth = async () => {
+      addLog("Vérification de l'URL pour un retour Dropbox...");
       try {
         const token = await handleAuthCallback();
         if (token) {
+          addLog("Token détecté dans l'URL ! Connexion...");
           setAccessToken(token);
           initDropbox(token);
+          addLog("Dropbox initialisé.");
+        } else {
+          addLog("Aucun token trouvé dans l'URL. En attente de connexion.");
         }
       } catch (err) {
+        addLog(`ERREUR: ${err.message}`);
         setAuthError(err.message || "Erreur d'authentification");
       }
     };
@@ -38,28 +47,34 @@ function App() {
 
   const handleLogin = async () => {
     setAuthError(null);
+    addLog("Lancement OAuth standard (Code)...");
     if (!DROPBOX_CONFIG.APP_KEY) {
       alert("App Key manquante !");
       return;
     }
     try {
       const url = await getAuthUrl(DROPBOX_CONFIG.APP_KEY);
+      addLog("Redirection vers Dropbox...");
       window.location.href = url;
     } catch (err) {
+      addLog("Impossible de générer l'URL d'auth.");
       setAuthError("Impossible de contacter Dropbox. Vérifiez votre proxy.");
     }
   };
 
   const handleFastLogin = async () => {
     setAuthError(null);
+    addLog("Lancement Connexion DIRECTE (Zéro-Proxy)...");
     if (!DROPBOX_CONFIG.APP_KEY) {
       alert("App Key manquante !");
       return;
     }
     try {
       const url = await getImplicitAuthUrl(DROPBOX_CONFIG.APP_KEY);
+      addLog("Redirection vers Dropbox (Mode Implicit)...");
       window.location.href = url;
     } catch (err) {
+      addLog("Échec de la redirection directe.");
       setAuthError("Échec de la connexion directe.");
     }
   };
@@ -219,6 +234,15 @@ function App() {
             <b>Erreur :</b> {authError || error}
           </div>
         )}
+
+        <div style={{ marginTop: '3rem', width: '100%', maxWidth: '450px', background: 'rgba(0,0,0,0.5)', borderRadius: '12px', padding: '1rem', textAlign: 'left', border: '1px solid var(--glass-border)' }}>
+           <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+             Diagnostic de connexion :
+           </h4>
+           <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#4ade80', lineHeight: '1.4' }}>
+              {logs.map((log, i) => <div key={i}>{log}</div>)}
+           </div>
+        </div>
       </div>
     );
   }
