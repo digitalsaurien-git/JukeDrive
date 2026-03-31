@@ -44,7 +44,13 @@ export const handleAuthCallback = async () => {
         dbxAuth.setCodeVerifier(verifier);
 
         try {
-            const response = await dbxAuth.getAccessTokenFromCode(window.location.origin, code);
+            // Ajout d'un timeout manuel car le SDK peut "pendre" sur certains proxys
+            const tokenPromise = dbxAuth.getAccessTokenFromCode(window.location.origin, code);
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("Timeout: Dropbox ne répond pas après 15s. Vérifiez votre proxy.")), 15000)
+            );
+
+            const response = await Promise.race([tokenPromise, timeoutPromise]);
             const token = response.result.access_token;
             if (token) {
                 localStorage.setItem('jukedrive_dropbox_token', token);
@@ -54,9 +60,22 @@ export const handleAuthCallback = async () => {
             }
         } catch (error) {
             console.error("Erreur lors de l'échange du code PKCE:", error);
+            throw error; // Propager l'erreur pour l'UI
         }
     }
     return localStorage.getItem('jukedrive_dropbox_token');
+};
+
+export const validateToken = async (token) => {
+    try {
+        const tempDbx = new Dropbox({ accessToken: token });
+        await tempDbx.usersGetCurrentAccount();
+        localStorage.setItem('jukedrive_dropbox_token', token);
+        return true;
+    } catch (error) {
+        console.error("Token invalide ou bloqué par le réseau:", error);
+        return false;
+    }
 };
 
 export const logout = () => {
