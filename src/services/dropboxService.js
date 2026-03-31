@@ -15,7 +15,7 @@ export const getAuthUrl = async (appKey) => {
     const { DropboxAuth } = await import('dropbox');
     const dbxAuth = new DropboxAuth({ clientId: appKey });
     
-    // Le mode PKCE est obligatoire pour les nouvelles apps
+    // Le mode PKCE est obligatoire pour les nouvelles apps (Code Flow)
     const authUrl = await dbxAuth.getAuthenticationUrl(
         window.location.origin,
         null,
@@ -31,7 +31,37 @@ export const getAuthUrl = async (appKey) => {
     return authUrl;
 };
 
+// Mode Implicite : Le token est renvoyé directement dans l'URL (#access_token=...)
+// Avantage : Aucun appel API n'est nécessaire pour l'échange (idéal pour les proxys)
+export const getImplicitAuthUrl = async (appKey) => {
+    const { DropboxAuth } = await import('dropbox');
+    const dbxAuth = new DropboxAuth({ clientId: appKey });
+    const authUrl = await dbxAuth.getAuthenticationUrl(
+        window.location.origin,
+        null,
+        'token', // Mode Implicit
+        null,
+        null,
+        'none',
+        false
+    );
+    return authUrl;
+};
+
 export const handleAuthCallback = async () => {
+    // 1. Vérifier si on a un token dans le fragment (#access_token=...) - Priorité Proxy
+    if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const token = hashParams.get('access_token');
+        if (token) {
+            localStorage.setItem('jukedrive_dropbox_token', token);
+            // Nettoyer l'URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return token;
+        }
+    }
+
+    // 2. Vérifier si on a un code (Code Flow / PKCE standard)
     const queryParams = new URLSearchParams(window.location.search);
     const code = queryParams.get('code');
     const verifier = sessionStorage.getItem('jukedrive_dbx_verifier');
@@ -54,13 +84,12 @@ export const handleAuthCallback = async () => {
             const token = response.result.access_token;
             if (token) {
                 localStorage.setItem('jukedrive_dropbox_token', token);
-                // Nettoyer l'URL
                 window.history.replaceState({}, document.title, window.location.pathname);
                 return token;
             }
         } catch (error) {
             console.error("Erreur lors de l'échange du code PKCE:", error);
-            throw error; // Propager l'erreur pour l'UI
+            throw error;
         }
     }
     return localStorage.getItem('jukedrive_dropbox_token');

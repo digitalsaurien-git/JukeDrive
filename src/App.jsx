@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import { getAuthUrl, handleAuthCallback, initDropbox, validateToken } from './services/dropboxService';
+import { getAuthUrl, getImplicitAuthUrl, handleAuthCallback, initDropbox, validateToken } from './services/dropboxService';
 import { DROPBOX_CONFIG, setDropboxAppKey, setDropboxRoot } from './config';
 import Sidebar from './components/Sidebar';
 import MainView from './components/MainView';
@@ -47,6 +47,20 @@ function App() {
       window.location.href = url;
     } catch (err) {
       setAuthError("Impossible de contacter Dropbox. Vérifiez votre proxy.");
+    }
+  };
+
+  const handleFastLogin = async () => {
+    setAuthError(null);
+    if (!DROPBOX_CONFIG.APP_KEY) {
+      alert("App Key manquante !");
+      return;
+    }
+    try {
+      const url = await getImplicitAuthUrl(DROPBOX_CONFIG.APP_KEY);
+      window.location.href = url;
+    } catch (err) {
+      setAuthError("Échec de la connexion directe.");
     }
   };
 
@@ -155,29 +169,38 @@ function App() {
           </>
         ) : (
           <div className="glass-panel" style={{ padding: '2rem', maxWidth: '450px', width: '100%', textAlign: 'left' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Connexion Manuelle (Token)</h3>
+            <h3 style={{ marginBottom: '1rem' }}>Mode Expert (Proxy / Pro)</h3>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-              Si le login standard bloque, générez un <b>Access Token</b> depuis la console Dropbox sur un autre poste et collez-le ici.
+              Utilisez la connexion directe si le mode standard bloque. Dropbox renverra le token directement dans l'URL.
             </p>
             
-            <input 
-              type="password" 
-              placeholder="Collez votre Access Token ici..."
-              value={manualToken}
-              onChange={(e) => setManualToken(e.target.value)}
-              style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginBottom: '1rem' }}
-            />
-            
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <button className="btn-primary" style={{ flex: 1 }} onClick={handleManualConnect}>
-                Valider le Token
-              </button>
-              <button 
-                onClick={() => setIsExpertMode(false)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', padding: '0.75rem 1rem', borderRadius: '8px', color: 'white', cursor: 'pointer' }}
-              >
-                Retour
-              </button>
+            <button className="btn-primary" style={{ width: '100%', marginBottom: '2rem', background: 'linear-gradient(135deg, #4ade80, #22c55e)' }} onClick={handleFastLogin}>
+              🚀 Connexion Directe (Zéro-Proxy)
+            </button>
+
+            <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Ou collez un token généré manuellement :
+              </p>
+              <input 
+                type="password" 
+                placeholder="Access Token..."
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+                style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.3)', color: 'white', marginBottom: '1rem' }}
+              />
+              
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <button className="btn-primary" style={{ flex: 1 }} onClick={handleManualConnect}>
+                  Valider le Token
+                </button>
+                <button 
+                  onClick={() => setIsExpertMode(false)}
+                  style={{ background: 'rgba(255,255,255,0.1)', border: 'none', padding: '0.75rem 1rem', borderRadius: '8px', color: 'white', cursor: 'pointer' }}
+                >
+                  Retour
+                </button>
+              </div>
             </div>
           </div>
         )}
