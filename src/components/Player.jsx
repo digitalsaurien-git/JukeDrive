@@ -13,13 +13,14 @@ const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox 
   useEffect(() => {
     if (currentSong && accessToken) {
       setIsLoading(true);
-      setAudioUrl(null);
+      setAudioUrl(null); // Force le rechargement
       
       const fetchUrl = async () => {
         try {
           const url = await getStreamUrl(currentSong.path || currentSong.id);
           setAudioUrl(url);
           setIsLoading(false);
+          // On ne déclenche pas le play ici, on laisse l'audio charger
         } catch (err) {
           console.error("Erreur de chargement audio Dropbox", err);
           setIsLoading(false);
@@ -28,29 +29,31 @@ const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox 
 
       fetchUrl();
     }
-  }, [currentSong, accessToken, isDropbox]);
+  }, [currentSong?.id, accessToken]);
 
+  // Lecture automatique une fois l'URL prête et chargée
   useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.play().catch(e => console.error("Play error:", e));
-      } else {
-        audioRef.current.pause();
-      }
+    if (audioUrl && audioRef.current && isPlaying) {
+      audioRef.current.play().catch(e => {
+        // En cas d'erreur (ex: interaction utilisateur requise), on met en pause
+        console.warn("Auto-play bloqué par le navigateur, en attente d'interaction.");
+        setIsPlaying(false);
+      });
     }
-  }, [isPlaying, audioUrl]);
+  }, [audioUrl]);
 
+  // Gestion Play/Pause manuelle
   useEffect(() => {
-    // When a new song comes in and URL is set, auto-play
-    if (audioUrl && currentSong) {
-      setIsPlaying(true);
-      if (audioRef.current) {
-         audioRef.current.play().catch(e => console.error("Play error:", e));
-      }
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.play().catch(() => setIsPlaying(false));
+    } else {
+      audioRef.current.pause();
     }
-  }, [audioUrl, currentSong]);
+  }, [isPlaying]);
 
   const togglePlay = () => setIsPlaying(!isPlaying);
+// ... suite du composant
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
@@ -80,15 +83,13 @@ const Player = ({ currentSong, playlist, onNext, onPrev, accessToken, isDropbox 
 
   return (
     <div className="player-bar">
-      {audioUrl && (
-        <audio 
-          ref={audioRef} 
-          src={audioUrl} 
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={handleEnded}
-          onLoadedMetadata={() => setDuration(audioRef.current.duration)}
-        />
-      )}
+      <audio 
+        ref={audioRef} 
+        src={audioUrl || ''} 
+        onTimeUpdate={handleTimeUpdate}
+        onEnded={handleEnded}
+        onLoadedMetadata={() => setDuration(audioRef.current?.duration || 0)}
+      />
       
       <div style={{ display: 'flex', alignItems: 'center', width: '30%', gap: '1rem' }}>
         {currentSong ? (
