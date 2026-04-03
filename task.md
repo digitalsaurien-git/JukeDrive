@@ -6,3 +6,5 @@
 - [x] **Moteur de Recherche Google Drive (Scan par ID)**
     - [x] Créer `scanMusicTree` dans `googleDrive.js` pour scanner l'arborescence (3 niveaux max) à partir de l'ID racine.
     - [x] Mettre à jour `useMusicScanner.js` pour intégrer ce nouvel algorithme optimisé avec l'ID `1J-EAg_yyAVuwvbwDyJoLCD_lc7bLNJle`.
+- [x] **Diagnostic UI & Espace Écran**
+    - [x] Transformer la fenêtre de diagnostic système flottante en une icône toggleable (lucide-react Activity) pour libérer de l'espace visuel.

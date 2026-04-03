@@ -102,3 +102,4 @@ Créer une application web de jukebox connectée à Google Drive pour permettre 
 - [ ] Aucun fichier n’est modifié/supprimé sur Drive sans action explicite
 - [ ] Les erreurs de connexion ou dossier vide sont gérées avec un message clair
 - [ ] Toutes les fonctionnalités sont accessibles sur la même page ou via un menu simple
+- [x] Fenêtre de diagnostic système rétractable (icône flottante) pour optimiser l'espace écran

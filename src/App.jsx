@@ -7,10 +7,12 @@ import MainView from './components/MainView';
 import Player from './components/Player';
 import { useMusicScanner } from './hooks/useMusicScanner';
 import { usePlaylistStore } from './store/usePlaylistStore';
+import { Terminal, X, Search, Activity } from 'lucide-react';
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
   const [isExpertMode, setIsExpertMode] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
   const [manualToken, setManualToken] = useState('');
   const [authError, setAuthError] = useState(null);
   const [logs, setLogs] = useState(["Initialisation..."]);
@@ -320,14 +322,43 @@ function App() {
         addLog={addLog}
       />
 
-      {/* Log Console Floating Support */}
-      <div style={{ position: 'fixed', bottom: '100px', right: '20px', zIndex: 1000, width: '300px', background: 'rgba(0,0,0,0.85)', borderRadius: '12px', padding: '0.75rem', border: '1px solid var(--glass-border)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-           <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.3rem' }}>
-             Diagnostic System
-           </h4>
-           <div style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#4ade80', lineHeight: '1.4' }}>
-              {logs.map((log, i) => <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2px 0' }}>{log}</div>)}
+      {/* Log Console Floating Support - Minimalist Toggle */}
+      <div style={{ position: 'fixed', bottom: '100px', right: '20px', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+         {showLogs && (
+           <div className="glass-panel" style={{ width: '300px', maxHeight: '400px', overflow: 'hidden', padding: '0.75rem', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.3rem' }}>
+                <h4 style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'var(--text-secondary)', margin: 0 }}>
+                   Diagnostic System
+                </h4>
+                <X size={14} style={{ cursor: 'pointer', color: 'var(--text-secondary)' }} onClick={() => setShowLogs(false)} />
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: '#4ade80', lineHeight: '1.4', overflowY: 'auto' }}>
+                 {logs.map((log, i) => <div key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', padding: '2px 0' }}>{log}</div>)}
+              </div>
            </div>
+         )}
+         
+         <button 
+           onClick={() => setShowLogs(!showLogs)}
+           className="btn-status-toggle"
+           title="Status Système"
+           style={{ 
+             width: '40px', 
+             height: '40px', 
+             borderRadius: '50%', 
+             background: showLogs ? 'var(--accent-color)' : 'rgba(0,0,0,0.6)', 
+             border: '1px solid var(--glass-border)',
+             color: 'white',
+             display: 'flex',
+             alignItems: 'center',
+             justifyContent: 'center',
+             cursor: 'pointer',
+             boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+             backdropFilter: 'blur(10px)'
+           }}
+         >
+           {showLogs ? <X size={20} /> : <Activity size={20} />}
+         </button>
       </div>
     </div>
   );
