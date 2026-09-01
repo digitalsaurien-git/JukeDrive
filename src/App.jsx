@@ -133,7 +133,7 @@ function App() {
     return (
       <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
          <div className="glass-panel" style={{ padding: '3rem', maxWidth: '500px', width: '100%', textAlign: 'center' }}>
-            <h1 style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Config JukeBox-Box</h1>
+            <h1 style={{ marginBottom: '1rem', color: 'var(--accent-color)' }}>Config JukeDrive</h1>
             <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>
               Connectez votre Dropbox (2 To d'espace !)
             </p>
@@ -180,7 +180,7 @@ function App() {
     return (
       <div className="app-container" style={{ alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center', padding: '2rem' }}>
         <h1 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem' }}>
-          JukeBox<span style={{ color: 'var(--accent-color)' }}>-Box</span>
+          Juke<span style={{ color: 'var(--accent-color)' }}>Drive</span>
         </h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '3rem', maxWidth: '400px' }}>
           Votre bibliothèque Dropbox personnelle, même derrière un proxy sécurisé.
